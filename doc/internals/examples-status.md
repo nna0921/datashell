@@ -22,3 +22,11 @@ All modules load, then it stops with `statedata.api is not a function` ([STATE.j
 
 ## Next
 One test per problem above. Fixes come only after a test shows the problem.
+
+## My p2p news app
+Runs fine on my local STATE.js (shim from my datashell, `#dev=` on, clean `localStorage`).
+So today's STATE.js works for a real app. The examples break on cases the news app doesn't use:
+two components from one file, a module without `api:`, and subs in example 1.
+
+How to run it: datashell with `npx http-server . -p 9977 --cors -c-1`, the news app's `web/index.js` pointing to `http://localhost:9977/shim.js`, then open the news app with `#dev=http://localhost:9977/lib/node_modules/`.
+Tip: tick "Disable cache" in DevTools, or the browser may keep an old shim.
