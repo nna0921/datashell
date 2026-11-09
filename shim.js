@@ -34,6 +34,9 @@ ${delimiter}
   const user_url = url(user_href)
   const user_env = parse(user_url.search)
   const user_arg = parse(user_url.hash.slice(1))
+  // dev mode: remember `#dev=…` for this tab, so a reload keeps loading local files
+  if ('dev' in user_arg) sessionStorage.setItem('dev', user_arg.dev)
+  else if (sessionStorage.getItem('dev')) user_arg.dev = sessionStorage.getItem('dev')
   const page_url = url(page_href)
   const page_env = parse(page_url.search)
   const page_arg = parse(page_url.hash.slice(1))
@@ -572,7 +575,7 @@ async function renderer () {
       async function patch_cache_in_browser (source_cache, module_cache) {
         const prefix = 'https://raw.githubusercontent.com/playproject-io/datashell/'
 ///////////////////////////////////////////////////////////////////////////////
-//        const dev = user_arg.dev
+       const dev = user_arg.dev
 //        const USE_LOCAL = true
 //        const dev = 'http://localhost:9999/lib/node_modules/'
 
