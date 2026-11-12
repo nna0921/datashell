@@ -29,16 +29,23 @@ function fallback_module () {
 
 // results go onto the page: the shim turns off console.log for page code (shim.js, glob.console)
 function check (name, ok, note = '') {
-  log(`${ok ? 'ok' : 'not ok'} ${name}${note ? `  (${note})` : ''}`)
+  log(`${ok ? 'ok' : 'not ok'} ${name}${note ? `  (${note})` : ''}`, ok)
   if (!ok) failed++
 }
 
+// the end result goes on top, so it's seen without scrolling
 function done () {
-  log(failed ? `${failed} failed` : 'all good')
+  log(failed ? `${failed} failed` : 'all good', !failed, true)
   if (failed) throw new Error('no-api tests failed')
 }
 
-function log (line) { document.body.append(Object.assign(document.createElement('pre'), { textContent: line })) }
+// green for ok, red for not ok
+function log (line, ok, on_top) {
+  const pre = Object.assign(document.createElement('pre'), { textContent: line })
+  pre.style.color = ok ? 'green' : 'red'
+  if (on_top) document.body.prepend(pre)
+  else document.body.append(pre)
+}
 
 // gives back the error if the promise fails, or false
 function fails (promise) { return promise.then(() => false, error => error) }
