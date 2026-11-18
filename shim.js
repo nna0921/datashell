@@ -477,6 +477,7 @@ async function renderer () {
       })
 
       const bindmap = new Map()
+      const packages = {}
 
       const USE_LOCAL = 'dev' in user_arg
       const HELPER_MODULES = ['io', 'localdb', 'STATE'] // @TODO: localdb/io for userland too?
@@ -551,7 +552,7 @@ async function renderer () {
           sdk.Number = Number
           sdk.Symbol = Symbol
           sdk.Promise = Promise
-          sdk.fetch = fetch.bind(window)
+          sdk.fetch = package_fetch
           // ------------------------------
           sdk.AsyncFunction = `${(async () => {}).constructor}`
           // ------------------------------
@@ -564,6 +565,32 @@ async function renderer () {
         // @TODO: use source with `return ...` to make proper use of `evaluate()
         const opts = { label, source, sdk }
         return evaluate(opts)
+      }
+      async function package_fetch (input, options) {
+        // `/node_modules/<name>/<path>` is fetched from the package's github repo if the page doesn't serve node_modules (e.g. github pages)
+        const root = new URL('./', location.href).href
+        const href = new URL(input, root).href.replace(/([^:]\/)\/+/g, '$1')
+        const modules = root + 'node_modules/'
+        if (!href.startsWith(modules)) return fetch(input, options)
+        const [name, ...path] = href.slice(modules.length).split('/')
+        const base = await (packages[name] || (packages[name] = find_package(root, name)))
+        return fetch(base + path.join('/'), options)
+      }
+      async function find_package (root, name) {
+        const local = `${root}node_modules/${name}/`
+        if ((await fetch(local + 'package.json', { method: 'HEAD' })).ok) return local
+        const repos = await (packages[''] || (packages[''] = find_repos(root + 'package.json')))
+        return repos[name] || local
+      }
+      async function find_repos (package_json, repos = {}) {
+        const { dependencies = {} } = await (await fetch(package_json)).json()
+        await Promise.all(Object.entries(dependencies).map(([name, spec]) => {
+          const [, repo, ref = 'HEAD'] = spec.match(/^(?:github:|git\+https:\/\/github\.com\/)?([\w.-]+\/[\w.-]+?)(?:\.git)?(?:#(.+))?$/) || []
+          if (!repo || repos[name]) return
+          repos[name] = `https://raw.githubusercontent.com/${repo}/${ref}/`
+          return find_repos(repos[name] + 'package.json', repos)
+        }))
+        return repos
       }
       function clear_db_on_file_change () {
         const last_item = sessionStorage.getItem('last_item')
