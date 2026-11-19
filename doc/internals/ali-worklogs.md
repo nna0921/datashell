@@ -23,6 +23,7 @@ What it's for: Ali didn't always track what was done, so the "status today" part
 | 276 | 23/6/2025 | quick editor v0.0.3 (apply, saved to localStorage); `drive.put` now triggers `onbatch`; STATE moves to datashell | `{ type, data }` check in io, peer ids as `Symbol`, the `resource()` helper, strict input validation, `future` version in `drive.json`, editor for sub-components + export / import | yes: `put` → `onbatch` test, io message check, error messages |
 | thread | 23/6–27/7/2025 | **STATE bugs and features:** devs post STATE bugs for Ali (Hassan's repo, flamingo-wallet) | wrong-use bugs (endless loop, paths as keys, `require('../src/index')`), `$ref` in instance data, an easier way to theme a sub | yes: wrong-input tests, a list-of-subs test, flamingo-wallet |
 | 277 | 30/6/2025 | quick editor v0.0.4 (sub-components); bug fixes from the bugs thread; STATE moves to datashell with the new `boot.js` + `shim.js`; serapath's full STATE task list | drive path keys (`'data/x.json'`), `$ref` in instance args, admin storage & hooks, strict validation, test list, docs for `admin` / `get_sub` / techniques, the revamp | yes: most of #39 4️⃣ comes from this list |
+| thread | 3/7–18/9/2025 | **STATE bugs & features, part 2:** sub `type`s, re-loading an instance by `sid`, Ahmad's `drive.put` bug, passing data to many subs, files from external repos | relative sub types with instance ids, reuse a `sid` after discard, the `put` bug, external file resolvers (package.json, iframe) | yes: sub `type` test, `sid` reuse test, `put` test, flamingo-wallet |
 
 ---
 
@@ -706,3 +707,60 @@ links: [video](https://www.youtube.com/watch?v=YI-fZzkj1DM) · [GitHub: quick_ed
 - **0:10 Sub-components in the editor:** the page gets the sub ids straight from the database and sends them to the editor as a message. A third level of tabs shows them.
 - **1:33** All bugs from the thread are fixed except one (bug 2, paths as keys). He wasn't sure whether to **allow** that way of defining files or to throw an error; today it throws. (Serapath's answer: allow it.)
 - **2:23 Next:** version control, plus the bugs and features.
+
+---
+
+## Thread: STATE bugs & features, part 2 (3/7–18/9/2025, between 277 and 278)
+
+links: [Discord thread](https://discord.com/channels/859134561018839060/1390400336123924560)
+
+**What it is:** the second thread for STATE bugs and feature ideas (part 1 is above). On 18/9 serapath reminds all contributors: STATE problems go here.
+
+**The posts:**
+1. **Sub `type`s make no sense (serapath, 4–5/7):** `sdb.watch` returned subs like `{ sid, type: 'page>..' }` and `{ sid, type: '..' }`, and once even `type: 'page>..>drive'`.
+   - The type includes the **parent's** names, and doesn't say **which instance** it is.
+   - Serapath wants it **relative to the current module**, with the instance id, e.g. `..:0` for the module and `..:0 > 0` for its first instance. Then you know which module to `require` to create an instance for that `sid`.
+   - Ali: the type is the module address, so you know which instances belong together. The instance number is missing; he'll think about it.
+2. **Re-create an instance with the same `sid` (serapath, 6/7):**
+   - an instance is created, used, then thrown away. Later the parent creates it again with the **same `sid`**, and it gets **the same drive state** back, like after a page reload.
+   - **protection:** two instances can't use the same `sid` at the same time.
+3. **Ahmad's `drive.put` bug (18/7):** in [graph-explorer](https://github.com/ddroid/graph-explorer) ([page](https://ddroid.github.io/graph-explorer/)), a function that updates runtime state gets stuck on its **first** `put`. It says `target_file` is undefined for `vertical_scroll_value.json`, though the dataset has all 4 files. `drive.get` works fine. Serapath: "strongly seems like a bug in STATE".
+4. **Passing data to many subs (serapath, 25/7):** the alternative is sub overrides inside `contacts_list`. But if `contact_row` has subs, and those have subs, the developer using `contacts_list` must write overrides for the **whole tree**. "A very bad developer experience compared to not using STATE at all." Better: each component does this work for its own subs, so the work is split.
+   - **The linked messages** (in Hassan's worklog-4 thread, about his contact list). Serapath posted them on 25/7, 3:25 pm as "[feature request](https://discord.com/channels/859134561018839060/1397139757808615492/1398248681097920543)" and "[possible issue](https://discord.com/channels/859134561018839060/1397139757808615492/1398249508571316315)":
+     - [Serapath's answer (25/7)](https://discord.com/channels/859134561018839060/1397139757808615492/1398248354923937903): create one `contact_row` sub instance per entry with `contact_row(await sdb.add(opts))`. **`sdb.add(opts)`** returns a new `sid` and runs `contact_row`'s instance fallback with `opts` as its args.
+     - [Serapath (25/7)](https://discord.com/channels/859134561018839060/1397139757808615492/1398248681097920543): Ali should link the docs for this, or add them if missing. Ali is now responsible for helping everyone update their code to new STATE features and breaking changes.
+     - [**The reload problem** (serapath, 25/7)](https://discord.com/channels/859134561018839060/1397139757808615492/1398249508571316315): after a reload, `sdb.watch(onbatch)` gives the `sid`s of the 4 rows from last time, **and** `onbatch` fires again with the 4 contacts, which creates 4 **more** rows. Every reload would add the same contacts again. "Let's brainstorm options first."
+     - [The mainstream case (serapath, 30/7)](https://discord.com/channels/859134561018839060/1397139757808615492/1399855074917744733): the fallback gives `contact_list` an array → its `api` stores it in its drive → `onbatch` → one `contact_row` per entry. Contact lists, file systems, image galleries, chat histories all work like this. "Do you call this static or dynamic?"
+5. **flamingo-wallet `transaction_history` (serapath, 30/7):**
+   - the page sets an array of entries ([page.js:127-215](https://github.com/ibrarli/flamingo-wallet/blob/main/web/page.js#L127-L215))
+   - `transaction_history`'s fallback makes a `transaction_row` sub for each ([transaction_history.js:92-94](https://github.com/ibrarli/flamingo-wallet/blob/main/src/node_modules/transaction_history/transaction_history.js#L92-L94))
+   - each row's api puts its data in its drive ([transaction_row.js:119](https://github.com/ibrarli/flamingo-wallet/blob/main/src/node_modules/transaction_row/transaction_row.js#L119))
+   - It seems to work (rows show up, no error), and a breakpoint in the row shows the right data. But serapath **can't set a breakpoint** in `transaction_history.js:92-94`, so he can't follow how the data gets there. (He linked the same messages as in 4.)
+6. **Files from external repos (serapath, 19/8):**
+   - **The problem:** ui-components depends on graph-explorer. Its code is bundled in, but its fallback's `$ref` to `entries.json` looks in ui-components' page, where the file isn't.
+   - **The plan:** STATE reads the current project's **`package.json`**. If `graph-explorer` is a dependency (`"github:ddroid/graph-explorer"`), STATE knows it's **external** and builds the GitHub url to load the file. An external module's own `package.json` tells about its own external deps.
+   - **Several resolvers:** (1) local module, (2) GitHub repo. Later maybe npm, p2p hyperdrives, and an **iframe** resolver against CORS: load the component's GitHub page in an iframe and get the file through `postMessage`. Serapath has the iframe code and will add it after Ali's next PR.
+   - Ali's idea (`$ref: 'entries.json*'` to mark an external file): not needed, `package.json#dependencies` already makes it explicit.
+   - Serapath: **add this kind of reasoning as comments in STATE.js**.
+7. **Ali (21/8):** many mentions to answer, going one by one. Serapath: make tasks (or use existing ones) and link the Discord messages as @input.
+
+**Status today (checked in datashell):**
+- ⏳ **Sub types (1):** `entry.type` is still set to a modulepath / local id / name ([STATE.js:435-461](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L435-L461)), and `watch` returns `{ sid, type }` ([STATE.js:690](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L690)). So no relative path, no instance id. That's what my "two children" test sees too (`page>child` and `child`).
+- 🟠 **One `sid` at a time (2):** STATE throws `FAIL.sid_used` "Access denied! SID … is already used" ([STATE.js:261](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L261), [STATE.js:1268](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1268)). But there's no "discard", so re-creating a thrown-away instance with the same `sid` probably hits that error too. ⏳ Needs a test.
+- ❓ **Ahmad's `put` bug (3):** `put` finds the dataset by the first part of the path and then the file by name ([STATE.js:1016-1040](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1016-L1040)). Not known if fixed. Needs a test with several files in one dataset and repeated `put`s.
+- ⏳ **Data to many subs (4, 5):** **`sdb.add` doesn't exist.** Today `sdb` is only `{ id, watch, drive, get, get_sub }` ([STATE.js:931](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L931)). `sdb.get(sid)` gives a sub's drive, it doesn't create anything ([STATE.js:967-974](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L967-L974)). So subs can only come from the fallback (`0: { data }` → `api(args)`), not be created at runtime from data. Whether flamingo-wallet's lists work today needs a run (#39 1️⃣).
+- ❓ **The reload problem:** not checked. With no `sdb.add`, it depends on how a list makes its rows today. Needs a test: reload a list page and count the rows.
+- ⏳ **External file resolvers (6):** nothing in STATE.js reads `package.json` or uses an iframe resolver. (shim.js has iframe code, but that's for running the page, not for fetching files.)
+
+**Questions for serapath:**
+- **Subs from data (`sdb.add`):** a list making one sub per entry is "the mainstream use case", but there's no `sdb.add` today. Is it still planned, and how should a reload avoid duplicate rows?
+- **Sub types:** is `..:0` / `..:0 > 0` (relative, with the instance id) still the target? It's close to "relative modulepaths" from 267.
+- **External files:** did your iframe resolver code get added after Ali's PR, or is it still open?
+
+**Affects my work:**
+- **Test (#39 4️⃣):** what `watch` returns as sub `type`s for a module with two instances of the same sub. Today vs serapath's target. Goes with "two children" and "relative modulepaths".
+- **Test:** create an instance, throw it away, create it again with the same `sid` → same drive state back. And two at once → a clear error.
+- **Test:** several `drive.put`s in a row on a dataset with several files (Ahmad's bug).
+- **Subs from data:** a list with N entries makes N rows, and a reload still shows N (not 2N). Today there's no `sdb.add`, so first ask serapath.
+- **flamingo-wallet** (#39 1️⃣): check `contacts_list` and `transaction_history` with many sub instances.
+- **Comments in STATE.js:** explain the why, not only the what (serapath).
