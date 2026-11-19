@@ -1,4 +1,4 @@
-# Ali's worklogs 267–276 → notes
+# Ali's worklogs 267–277 → notes
 
 Plan by Serapath: watch Ali's worklogs 267–283 + their threads, note every task, bug and agreement, mark what's outdated and what's still open.
 
@@ -22,6 +22,7 @@ What it's for: Ali didn't always track what was done, so the "status today" part
 | 275 | 18/6/2025 | quick editor v0.0.2: dataset tabs, file buttons; serapath's feature requests: async storage + `admin.on(callback)`, stable vs dev versions (`drive.json`), safe drive access for editors | async storage, the version update prompt, safe access (invite codes / mount points), docs for every feature | yes: `drive.put` → `onbatch` test, `admin.on` events, docs |
 | 276 | 23/6/2025 | quick editor v0.0.3 (apply, saved to localStorage); `drive.put` now triggers `onbatch`; STATE moves to datashell | `{ type, data }` check in io, peer ids as `Symbol`, the `resource()` helper, strict input validation, `future` version in `drive.json`, editor for sub-components + export / import | yes: `put` → `onbatch` test, io message check, error messages |
 | thread | 23/6–27/7/2025 | **STATE bugs and features:** devs post STATE bugs for Ali (Hassan's repo, flamingo-wallet) | wrong-use bugs (endless loop, paths as keys, `require('../src/index')`), `$ref` in instance data, an easier way to theme a sub | yes: wrong-input tests, a list-of-subs test, flamingo-wallet |
+| 277 | 30/6/2025 | quick editor v0.0.4 (sub-components); bug fixes from the bugs thread; STATE moves to datashell with the new `boot.js` + `shim.js`; serapath's full STATE task list | drive path keys (`'data/x.json'`), `$ref` in instance args, admin storage & hooks, strict validation, test list, docs for `admin` / `get_sub` / techniques, the revamp | yes: most of #39 4️⃣ comes from this list |
 
 ---
 
@@ -534,7 +535,7 @@ links: [video](https://youtu.be/SrpXgndm87s) · [GitHub: quick_editor (#41)](htt
 **Serapath's other points (Discord):**
 - **Remove the copy of STATE.js** in Ali's ui-components fork. Every module and project loads STATE through `boot.js` from **one master copy**. Through `drive.json` + url params, someone can still pick another version.
 - Add a **`future`** field to `drive.json` (next to `latest`), for the version under development, so devs aren't asked to update.
-- **(24/6) STATE moves to datashell:** serapath copied the latest STATE.js, io.js and localdb.js into datashell. Ali should fork it, continue there, and make PRs. All projects should use a minimal `boot.js` with the datashell fork's STATE.js. (Ali: `init.js` is missing there.)
+- **[(24/6) STATE moves to datashell](https://discord.com/channels/859134561018839060/1386698805528760380/1386807115313840138):** serapath copied the latest STATE.js, io.js and localdb.js into datashell. Ali should fork it, continue there, and make PRs. All projects should use a minimal `boot.js` with the datashell fork's STATE.js. (Ali: `init.js` is missing there.)
 - **example4** used the quick editor only to have an editor. Ali removed it, since the quick editor now lives in ui-components. Serapath: add **preview links** of example pages as outputs.
 - **New bugs from people using STATE "wrong"** (in the "STATE bugs and features" thread, see the next section). Ali: their files don't follow the structure at all; does STATE need an error for all of that? Serapath: yes. STATE must be [**"crazy robust"**](https://discord.com/channels/859134561018839060/1386698805528760380/1387542948324839545):
   - **strict input validation**
@@ -581,7 +582,7 @@ links: [Discord thread](https://discord.com/channels/859134561018839060/13867085
 **The posts:**
 1. **[Bug 0 (serapath, 23/6)](https://discord.com/channels/859134561018839060/1386708539526877215/1386737591461875712), endless recursion:** on first load, a page built a name like `undefined>undefined>undefined>…` forever ([Hassan's repo @db3df50](https://github.com/HassanRaja533/input-integer-state-version/tree/db3df50240508d9a280dc132af07def755184891)). Should be caught with a clear error. Azim (24/6): fixed by Ali.
 2. **[Bug 1 (serapath, 25/6)](https://discord.com/channels/859134561018839060/1386708539526877215/1387178216808255609), endless loop that froze his machine:** [Hassan's page.js fallback](https://github.com/HassanRaja533/input-integer-state-version/blob/ae249c155a5ec59ec1b503c78536d6f14f59753a/web/page.js). The `_` entry for the sub uses names (`age`, `birthyear`) instead of `$` / `0`, `1`, puts a `drive` in each, and uses `value:` instead of `raw:`. "The way it is being used is mental, BUT there should be a meaningful error message."
-3. **[Bug 2 (serapath, 26/6)](https://discord.com/channels/859134561018839060/1386708539526877215/1387539447834476625), paths as keys:** [page.js:57-72](https://github.com/HassanRaja533/input-integer-state-version/blob/d651b9e391743cb0514067501cec07b0391f7613/web/page.js#L57-L72). The drive uses `'data/age.opts.json'` as one key, instead of one name per level (`'data/': { 'age.opts.json': … }`), and again `value:` instead of `raw:`.
+3. **[Bug 2 (serapath, 26/6)](https://discord.com/channels/859134561018839060/1386708539526877215/1387539447834476625), paths as keys:** [page.js:57-72](https://github.com/HassanRaja533/input-integer-state-version/blob/d651b9e391743cb0514067501cec07b0391f7613/web/page.js#L57-L72). The drive uses `'data/age.opts.json'` as one key, instead of one name per level (`'data/': { 'age.opts.json': … }`), and again `value:` instead of `raw:`. → **Decided in 277:** path keys should be **allowed** (last one wins, with a warning).
    - The right shape, for comparison: `drive: { 'lang/': { 'en-us.json': { raw: … } } }` and `_: { icon: { $: '' } }` ([example1/btn.js:137-149](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/web/example1/node_modules/btn.js#L137-L149)).
 4. **[Misuse or feature? (serapath, 28/6)](https://discord.com/channels/859134561018839060/1386708539526877215/1388515404250484898):** instance data that points to a file in the **parent's** drive: `_: { '../src/index': { 0: { $ref: 'data/age.opts.json' } } }`. Serapath finds it interesting: a parent could give many sub instances the **same** file (e.g. a theme) as a link instead of a copy. Asked Ali for his thoughts.
 5. **[Bug 3 (serapath, 29/6)](https://discord.com/channels/859134561018839060/1386708539526877215/1388915114224123925):** [requiring the sub with `require('../src/index')` fails](https://github.com/HassanRaja533/input-integer-state-version/commit/cf810b7d265942158ef10aae0c9e6157c914d825). With `require('..')` it [loads, but fails with another error](https://github.com/HassanRaja533/input-integer-state-version/commit/bcdcc825dd6c769760cba0afdeccfb8db2fec7db). Serapath: page.js and src/index.js look right, this should work.
@@ -621,3 +622,87 @@ links: [Discord thread](https://discord.com/channels/859134561018839060/13867085
 - **Docs:** how to theme a sub instance (the `api` wrapper), until there's an easier way.
 - **"A second dev should learn STATE":** that's me now.
 
+---
+
+## 277: sub-components in the quick editor, STATE moves to datashell (30/6/2025)
+
+links: [video](https://www.youtube.com/watch?v=YI-fZzkj1DM) · [GitHub: quick_editor (#41)](https://github.com/playproject-io/playproject-io.github.io/issues/41#issuecomment-3018290400) · [GitHub: STATE (#30)](https://github.com/playproject-io/playproject-io.github.io/issues/30#issuecomment-3018352033) · [feedback quick_editor (#41)](https://github.com/playproject-io/playproject-io.github.io/issues/41#issuecomment-3023532895) · [feedback STATE (#30)](https://github.com/playproject-io/playproject-io.github.io/issues/30#issuecomment-3023578399) · [Discord thread 30/6–29/7/2025](https://discord.com/channels/859134561018839060/1219764849349755053/1389163448444911626)
+
+**What he did:**
+- [quick_editor_v0.0.4](https://github.com/alyhxn/ui-components/commit/beb0b4a8c8950396e5520139753d570ba0803f41) (4h): the editor now shows the **sub-components** too (a third level of tabs). The page reads their ids from the db and sends them to the editor.
+- STATE v0.0.23 → [v0.0.24](https://github.com/alyhxn/playproject/commit/775b2c1921b865fa2ce333953e40d703a9af0f34) (4h): fixed the bugs from the STATE bugs and features thread, except bug 2 (paths as drive keys).
+- **Proposals:** drive.json, `$ref` for overridden nodes, revamp, docs review, non-STATE subs not in the fallback, a list of test cases, the last feedback, a drive with or without `drive` in the fallback.
+
+**Serapath's feedback on the quick editor** (a task list of what's still open from earlier feedback):
+1. **Datasets first, subs later:** pick a dataset (e.g. `style`) and see every module / instance that has drive data for it, using **mapping**. Then a designer can click `style` and go through all components only for styles.
+   - Maybe a toggle to show modules / instances that **don't** have that dataset (e.g. a component that doesn't support theming).
+2. **Export / download and import / upload** buttons.
+3. Components can also change **their own** drive data, and the editor must learn about it (today the editor only updates on click).
+4. **io messages:**
+   - no more `const port = await io.at(editor_id)`
+   - only `{ type, data }`
+   - require the `resource()` helper where needed (see 276)
+5. Remove the old quick editor dependency from the file.
+
+**Serapath's feedback on STATE** (his list of all open STATE tasks, made from Ali's proposals + earlier feedback):
+- **Admin pluggable storage & hooks** (from 275).
+- **Admin-revokable drive links** (`{ $ref: 'drive://invitecode' }` or `{ $ref: drivelink }`), for certain datasets, writable or readonly (from 275).
+- **Improve fallbacks / overrides:**
+  - overridden nodes use the override's files (`$ref` id, from 267)
+  - **drive references in instance args**, e.g. `{ $ref: path }` (the "misuse or feature?" post in the bugs thread). This means a component gets **extra** writable / readonly drives next to its own, not that all its data comes through the drive.
+  - **allow path keys** like `'data/style.json': …` next to `{ 'data/': { 'style.json': … } }`. On a conflict, the **last one wins**, with a **console warning**. So bug 2 from the bugs thread becomes a **feature**, not an error.
+- ✅ **Versioning** (serapath did it himself):
+  - example `index.html`, `boot.js`, `shim.js` and a version file (he calls it `shim.json`, in datashell it's `drive.json`)
+  - still open: move all examples and projects to the new shim
+- **Non-STATE sub-modules** shouldn't have to be in the fallback (from 273).
+- **Verify all fallback / override data** (strict validation, from 276).
+- **A growing list of test cases**, against regressions.
+- **Docs:**
+  - a growing list of **use cases / techniques** and how to solve them with STATE, e.g. `sdb.get_sub` in page.js to pair components with editors
+  - short error messages, with longer explanations and code examples in the docs. Better errors should make the docs less needed.
+  - document **`statedb.admin`** and every field: `admin.status.dataset.drive`, `admin.status.dataset.drive.list('', node)`, `admin.status.db`
+  - document **`sdb.get_sub`**, and anything else missing in `sdb`
+- **Revamp / refactor STATE:** cleaner, easier to read and maintain, faster where possible.
+
+**Serapath's other points (Discord):**
+- **Before each new worklog, make a thorough list** of what's done and what's open from earlier feedback. Some things "went missing".
+- **STATE moves to datashell for good** ([PR #3](https://github.com/playproject-io/datashell/pull/3), merged 2/7/2025). It doesn't belong in the playproject website or ui-components. Then: update all examples, and help Ahmad, Azim and others move their projects.
+- **The new way to start a page** (serapath, 1/7 → 27/7):
+  - `index.html` loads `boot.js` with a plain `<script>`
+  - `boot.js` adds a script tag for `https://playproject.io/datashell/shim.js?version=latest#<args>`
+  - pick a version with `?version=0`, `stable`, `2`, …
+  - ESM `import` didn't work because of **CORS**, so it's a plain script tag now (fixed 23/7)
+- **Docs:** add a `docs/` folder to datashell. Don't repeat what the README already explains.
+- **A new issue "refine datashell"** for all unfinished tasks. Worklogs for datashell continue there.
+- **Ali's setup problems (16–28/7):**
+  - syntax errors in the shim
+  - `bundle.js` saved as **UTF-16** instead of UTF-8
+  - `bundle.js` ending with `;` broke the shim's `wrap`. Serapath's fix: strip a trailing `;`.
+  - Ali found `npx browserify -i STATE your-app.js -o bundle.js` fixes the encoding. He will move all projects to datashell and guide the others.
+
+**Status today (checked in datashell):**
+- ✅ **STATE in datashell:** `lib/node_modules/` has STATE.js, io.js, localdb.js.
+- ✅ **New boot way:** the [README](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/README.md) shows exactly the `index.html` + `boot.js` + `npx browserify -i STATE …` setup.
+- 🟠 **The version file** is `drive.json`, not `shim.json` ([drive.json](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/drive.json)).
+- ⏳ **Trailing `;` fix in `wrap`:** not in `shim.js` ([shim.js:440-451](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/shim.js#L440-L451) has no `endsWith(';')` check). Maybe the `-i STATE` command makes it unneeded. Needs a check.
+- ⏳ **Path keys in the drive (`'data/x.json'`):** not allowed. The validation expects `drive: { 'folder/': { 'file': { raw | $ref } } }` ([STATE.js:1345-1362](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1345-L1362)), so a path key gives an error.
+- ⏳ **`$ref` in instance args, admin storage & hooks, revokable drive links, non-STATE subs:** not built (see 267, 273, 275 and the bugs thread).
+- 🟠 **`sdb.get_sub`:** exists ([STATE.js:931-934](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L931-L934)) with a `// @TODO: maybe remove?`, and it's **not in `doc/api.md`**.
+- ⏳ **Docs for `statedb.admin`** and its fields: not in `doc/api.md`.
+- ❓ **Examples on the new shim, export / import, editor learns about drive changes:** to check (examples in #39 1️⃣; the editor is in ui-components / the devkit).
+
+**Questions for serapath:**
+- **Path keys:** is "allow `'data/x.json'` next to nested folders, last one wins, warn on conflict" still the plan? Today it's an error.
+- **`sdb.get_sub`** has `@TODO: maybe remove?`. Keep and document it, or remove it?
+
+**Affects my work:**
+- **#39 4️⃣ comes mostly from this list:** test cases, strict validation, the `$ref` @TODO, docs, revamp. I'm continuing what this list started.
+- **Bug 2 test changes:** path keys should **work** (last one wins, with a warning), not throw. Once serapath confirms.
+- **Docs to write:** `statedb.admin` fields, `sdb.get_sub`, and a "techniques" page (e.g. theming a sub, pairing with `get_sub`).
+- **His rule for me too:** before each worklog, list what's done and open from the last feedback.
+- **Moving projects to the new shim:** fits #39 1️⃣ (run every app).
+
+**From the video (3 min):**
+- **0:10 Sub-components in the editor:** the page gets the sub ids straight from the database and sends them to the editor as a message. A third level of tabs shows them.
+- **1:33** All bugs from the thread are fixed except one (bug 2, paths as keys). He wasn't sure whether to **allow** that way of defining files or to throw an error; today it throws. (Serapath's answer: allow it.)
+- **2:23 Next:** version control, plus the bugs and features.
