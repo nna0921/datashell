@@ -1,4 +1,4 @@
-# Ali's worklogs 267–273 → notes
+# Ali's worklogs 267–274 → notes
 
 Plan by Serapath: watch Ali's worklogs 267–283 + their threads, note every task, bug and agreement, mark what's outdated and what's still open.
 
@@ -18,6 +18,7 @@ What it's for: Ali didn't always track what was done, so the "status today" part
 | 271 | 26/5/2025 | `args` implemented; serapath's feedback: the `(args, [fallbacks], tools)` form, data entries instead of override functions, update every example | the examples still mix old `([x])` and new style (example1/foo.js); the simplifications list | yes: example 3's override, example 1 cleanup, docs |
 | 272 | 31/5/2025 | feedback from 271 implemented; io: `at()` must not return a port, connections restored after a reload; "Revamp STATE", keep it sync | io.at still returns a port and nothing is restored after a reload; STATE.js init code is still async (4 functions; the drive api may stay async); io/net reload concept not in docs | yes: the reload test, the sync rule for my fixes, `watch2` leftover |
 | 273 | 6/6/2025 | `onbatch` gets paths, not file contents; `{ type, data }` convention; first test-case list; rewrite STATE.js from scratch | batch is still `{ type: dataset, paths }` (whole dataset on every change, no `put` / `del` types); `on[type]` mixes datasets and messages; lint; the STATE rewrite | yes: a `watch` test (only the changed path), my net.js message shape |
+| 274 | 12/6/2025 | first `quick_editor` (CSS editor, built into each component); serapath: wrong approach, use a container component + `sdb.admin` instead | the container component, its io protocol with the root, saving edits to the `style` dataset | yes: `sdb.admin` is what the devkit (sys_ui) task in #39 builds on |
 
 ---
 
@@ -384,3 +385,57 @@ links: [video](https://youtu.be/lilKjTt6lc0) · [GitHub: STATE (#30)](https://gi
 - **1:25 `page.js` isn't like the proposal**, again because of timing. He added `async` functions to get around it, which made it slower. Some `args` aren't ready yet when a module runs, so the proposal "should work but currently doesn't".
   - ⏳ Serapath (19/11/2026): agreed, this should be fixed. Making `page.js` work like his proposal (or as close as possible), cleaned up, "would be major". Part of the timing bugs.
 - **2:28 His own summary:** "it's been many months since we optimized STATE … we've been throwing in code without a good planning", so small changes break many things. "There's a desperate need of optimizing STATE." This is where the rewrite (serapath's "rewrite the entire file") comes from.
+
+---
+
+## 274: first quick editor (12/6/2025)
+
+links: [video](https://youtu.be/JUNCN6aeVUc) · [GitHub: quick_editor (#41)](https://github.com/playproject-io/playproject-io.github.io/issues/41#issuecomment-2966350480) · [serapath's feedback (#41)](https://github.com/playproject-io/playproject-io.github.io/issues/41#issuecomment-2967982857) · [Discord thread 12–14/6/2025](https://discord.com/channels/859134561018839060/1219764849349755053/1382694240940724294) · Ahmad's worklog-30 thread (13/6/2025)
+
+**What he did:** [quick_editor_v0.0.1](https://github.com/alyhxn/playproject/commit/dd5a8a33c1ca1228ed3f4284b3067f36a0d2873e) (9h): a small CSS editor, the CSS injection, integrated into `app` and `nav` (example4), plus debugging. Most of the time went into trying to build it with **overrides**, which never worked.
+- **Proposal:** save the changes.
+
+**Serapath's feedback:**
+1. **Wrong approach.** We can't ask every developer to add a `quick_editor` to their component. It must work for **any** component, without changing the component and without touching STATE (unless it's really impossible).
+2. **His idea: a "container component"** (a component previewer):
+   - It's resizable and shows one component instance inside, like the box around each component on the ui-components preview page.
+   - It has a button to open / close an editor (even a plain textarea is enough).
+   - The editor is its **own component**, a dependency of the container. It has no direct access to the previewed component's drive, on purpose.
+3. **How the editor gets the data:** through the **root**, which has **`sdb.admin`** (only the root has it). The container asks the root over `io`, and only gets access to the previewed instance and its sub-modules, and only the **`style`** dataset.
+   - The root (`page.js`) finds the previewed component through `const component_content = await factory(subs[index])`.
+   - An io message protocol between editor ↔ container ↔ root to: read the `style` files of the instance and all its sub-modules, send them to the editor, and on save, update the right drives. Each update says **which sub-module** changed, so its `onbatch` applies it.
+4. **Steps:** (1) make the container (resize + editor toggle), (2) use it on the ui-components page for every component, (3) then the read / update communication.
+5. **Why it's tricky:** components can't be **required dynamically** yet. That only changes once budo / browserify is replaced by our own runtime ("soon, but not too soon").
+6. **A global show / hide toggle:** a button that uses io to tell all container instances to show or hide.
+7. Same mechanism as the **theme widget** (for normal apps), but with access to only a part. Both use `statedb.admin`, and so will Ahmad's "graph explorer".
+8. First check that it's possible with today's STATE. If something is missing, discuss and add it, then **fully focus on the STATE revamp**. A good text editor isn't needed now; STATE being stable and bug-free is urgent.
+
+**Ahmad's worklog-30 thread (13/6/2025, the "unknown thread"):** Ahmad's [worklog 30](https://github.com/playproject-io/ui-components/issues/5#issuecomment-2967824601) put Ali's quick edits on the ui-components page. Hovering **any** component, even a button, opened its own editor. Serapath: "absolutely MENTAL", not how it was meant. What he wants instead:
+- **One editor per container box**, no matter how many nested instances the previewed component has.
+- The editor can change the allowed **named datasets** (for now only `style`) of the component and all its dependencies. A **dropdown** picks the dataset, and a `style` dataset can hold **several css files**.
+- **Export / download** the changes as a file, and **import / upload** a file to apply a theme to all components. Then Cypher can theme the components and hand in the exported file in a worklog.
+- **Not the theme widget:** the theme widget is one for the whole app, like full devtools for the runtime. The container has one editor each, with limited scope, and asks the root for access.
+- Ali's idea (in edit mode, show a border + name around each component to select it): not needed, a css `border` already shows it. **"Everything that can be done in user land should not be supported by the internals."**
+- **The ui-components page:** a list of container components. Each shows one component preview + an expand / collapse editor for the `style` dataset of that component and its dependencies.
+
+**Status today (checked in datashell):**
+- 🟠 **The quick editor / container:** not in datashell (no editor or container in `web/`). Ali moved the quick editor into Ahmad's repo (see 273). The idea grew into the **devkit**: it's the sys_ui that reads and changes a site's state through `sdb.admin`, and Ahmad is building it now (see the worklog-106 thread).
+- ✅ **`sdb.admin` exists:** `statedb.admin()` at [STATE.js:774](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L774), and only the root gets `api.admin` ([STATE.js:794](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L794)). It has `xget(id)`, `get_all()`, `status`, `drive`, `load`, `swtch` ([STATE.js:867-880](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L867-L880)).
+- ⏳ **The io protocol** (container ↔ root, read / update `style` for one instance + its subs): not built.
+- ⏳ **Dynamic require:** still not possible with budo / browserify. Fits the "no bundle" task.
+- 🟠 **Export / import:** per the devkit thread, the quick editor can export / import all data as a file today. Not checked yet: one editor per container, the dataset dropdown, several css files.
+- ⏳ **Saving edits (proposal 1):** `drive.put` exists. Ali's open question: save into a new theme, so the original CSS isn't lost. Not decided.
+
+**Questions for serapath:**
+- Is the container component (component previewer with a quick editor) still a separate task, or is it fully part of Ahmad's devkit now?
+
+**Affects my work:**
+- **`sdb.admin` is the key api** for the devkit, the theme widget and the container. My #39 task "the 3 admin methods: real bug or dead code?" should check them against these uses.
+- **Updating another instance's drive through `sdb.admin`** must trigger that instance's `onbatch`. That's a test for the new batch shape (#39 3️⃣).
+- **No bundle** (#39 Later): it's what makes dynamic require possible.
+- **Rule, same as the kernel rule (270):** what can be done in user land (a regular component) stays out of STATE.js.
+
+**From the video (3 min):**
+- **0:22 Why a helper module:** overrides can't inject scripts, so building the editor with overrides wasn't possible. He used an "unusual" helper module that keeps its values when other modules require it.
+- **1:03 Demo:** a button in the root turns editing on. The editor is in `app` and `nav`, and shows `nav`'s CSS. Changes apply live. A title (which module you're editing) is still missing.
+- **2:02 Not saved yet:** saving needs the drive, and maybe changes to it, e.g. a new theme for the edits so the original theme's CSS isn't lost. "Needs more planning."
