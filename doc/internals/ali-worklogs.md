@@ -395,7 +395,7 @@ links: [video](https://youtu.be/lilKjTt6lc0) · [GitHub: STATE (#30)](https://gi
 
 ## 274: first quick editor (12/6/2025)
 
-links: [video](https://youtu.be/JUNCN6aeVUc) · [GitHub: quick_editor (#41)](https://github.com/playproject-io/playproject-io.github.io/issues/41#issuecomment-2966350480) · [serapath's feedback (#41)](https://github.com/playproject-io/playproject-io.github.io/issues/41#issuecomment-2967982857) · [Discord thread 12–14/6/2025](https://discord.com/channels/859134561018839060/1219764849349755053/1382694240940724294) · Ahmad's worklog-30 thread (13/6/2025)
+links: [video](https://youtu.be/JUNCN6aeVUc) · [GitHub: quick_editor (#41)](https://github.com/playproject-io/playproject-io.github.io/issues/41#issuecomment-2966350480) · [serapath's feedback (#41)](https://github.com/playproject-io/playproject-io.github.io/issues/41#issuecomment-2967982857) · [Discord thread 12–14/6/2025](https://discord.com/channels/859134561018839060/1219764849349755053/1382694240940724294) · [Ahmad's worklog-30 thread (13/6/2025)](https://discord.com/channels/859134561018839060/1382791737000333483/1382800983544823919)
 
 **What he did:** [quick_editor_v0.0.1](https://github.com/alyhxn/playproject/commit/dd5a8a33c1ca1228ed3f4284b3067f36a0d2873e) (9h): a small CSS editor, the CSS injection, integrated into `app` and `nav` (example4), plus debugging. Most of the time went into trying to build it with **overrides**, which never worked.
 - **Proposal:** save the changes.
