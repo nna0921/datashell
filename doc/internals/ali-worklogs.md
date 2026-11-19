@@ -1,4 +1,4 @@
-# Ali's worklogs 267–275 → notes
+# Ali's worklogs 267–276 → notes
 
 Plan by Serapath: watch Ali's worklogs 267–283 + their threads, note every task, bug and agreement, mark what's outdated and what's still open.
 
@@ -20,6 +20,7 @@ What it's for: Ali didn't always track what was done, so the "status today" part
 | 273 | 6/6/2025 | `onbatch` gets paths, not file contents; `{ type, data }` convention; first test-case list; rewrite STATE.js from scratch | batch is still `{ type: dataset, paths }` (whole dataset on every change, no `put` / `del` types); `on[type]` mixes datasets and messages; lint; the STATE rewrite | yes: a `watch` test (only the changed path), my net.js message shape |
 | 274 | 12/6/2025 | first `quick_editor` (CSS editor, built into each component); serapath: wrong approach, use a container component + `sdb.admin` instead | the container component, its io protocol with the root, saving edits to the `style` dataset | yes: `sdb.admin` is what the devkit (sys_ui) task in #39 builds on |
 | 275 | 18/6/2025 | quick editor v0.0.2: dataset tabs, file buttons; serapath's feature requests: async storage + `admin.on(callback)`, stable vs dev versions (`drive.json`), safe drive access for editors | async storage, the version update prompt, safe access (invite codes / mount points), docs for every feature | yes: `drive.put` → `onbatch` test, `admin.on` events, docs |
+| 276 | 23/6/2025 | quick editor v0.0.3 (apply, saved to localStorage); `drive.put` now triggers `onbatch`; STATE moves to datashell | `{ type, data }` check in io, peer ids as `Symbol`, the `resource()` helper, strict input validation, `future` version in `drive.json`, editor for sub-components + export / import | yes: `put` → `onbatch` test, io message check, error messages |
 
 ---
 
@@ -503,3 +504,70 @@ links: [video](https://youtu.be/_3DYmwV37mA) · [GitHub: quick_editor (#41)](htt
 **From the video (2 min):**
 - **0:20 Demo:** the editor shows the datasets and their files. For now you can only view them, no apply / save yet.
 - **1:21 His approach:** start a new component without shadow dom, using fallbacks and overrides. Everything it needs comes in as **args**, e.g. the `id` of the node the editor is for. That can come through overrides, or through io / the root's dataset api. He keeps it so it can become a standard module.
+
+---
+
+## 276: quick editor works, `put` triggers `onbatch` (23/6/2025)
+
+links: [video](https://youtu.be/SrpXgndm87s) · [GitHub: quick_editor (#41)](https://github.com/playproject-io/playproject-io.github.io/issues/41#issuecomment-2996492442) · [GitHub: STATE (#30)](https://github.com/playproject-io/playproject-io.github.io/issues/30#issuecomment-2996925777) · [feedback quick_editor (#41)](https://github.com/playproject-io/playproject-io.github.io/issues/41#issuecomment-2997838592) · [feedback STATE (#30)](https://github.com/playproject-io/playproject-io.github.io/issues/30#issuecomment-2997963507) · [Discord thread 23–30/6/2025](https://discord.com/channels/859134561018839060/1219764849349755053/1386698805528760380)
+
+**What he did:**
+- [quick_editor_v0.0.3](https://github.com/alyhxn/ui-components/commit/879fcfacb3b2593b9a0e357d4b426224304231fe) (5h): made the editor a standard component, added **apply**. Changes trigger `onbatch` and are saved in localStorage.
+- STATE v0.0.22 → [v0.0.23](https://github.com/alyhxn/playproject/commit/10131dfdb02a3896b2da1b89b9a0def6dced7dae) (5h debugging, 5h discussion): **`drive.put` now triggers `onbatch`** (the bug from 275).
+- **Proposals:** 1. add a `drive.json` file, 2. overridden nodes use the override's files (`$ref`), 3. revamp STATE, 4. docs review, 5. non-STATE sub-modules shouldn't have to be in the fallback, 6. a list of test cases.
+
+**Serapath's feedback on the quick editor:**
+1. The editor must also show the **sub-components**, not only the top component. For each dataset: a dropdown or list of modulepaths, and for each, the files in its drive. (Ali: it will become 3 levels of tabs.)
+2. **Export / download** all drives of all component instances as **one file**, and **import / upload** such a file. Then Cypher can improve the theme, download it and send it. Later: upload it as a theme to the ui-components repo, and let everyone pick from a list of themes.
+3. Put all notes about it into a hackmd / pastebin and link it as the @input of that task.
+4. Ali's fork still showed several editors per container, but Ahmad's merged version has one: good.
+
+**Serapath's feedback on STATE:**
+1. Good proposals list. **Revamp STATE any time now:** first, or at the end, whatever Ali thinks is easier.
+2. How the editor gets its subs: the page's fallback defines all editor subs, the page reads their ids with `sdb.get_sub` and creates an instance for each component entry. (Ali confirmed. Serapath: "a cool idea", keep it that way, no `{ $ref: drivelink }` for now.)
+3. **Peer ids:** call `net.page.id` a `pid` and make it a **`Symbol(id)`**. A Symbol can't be guessed or recreated.
+4. **`io.at` must not return a port**, but a helper works around it: **`resource()`** keeps ports by `pid`. `io.on` saves each port (`item.set(port.to, port)`), and `await item.get(pid)` waits until that port exists. It's a helper, **not part of STATE**: require it in each file that needs it.
+5. **Keep the STATE api minimal.** Use helper modules to make it friendlier. Only change the core if a use case can't be solved, or would be much too slow, without it. Once STATE is stable, look at all ui-components for patterns to simplify.
+6. **Messages are always `{ type, data }`.** Maybe **io should enforce it** and throw otherwise. One standard makes io dev tooling possible later.
+
+**Serapath's other points (Discord):**
+- **Remove the copy of STATE.js** in Ali's ui-components fork. Every module and project loads STATE through `boot.js` from **one master copy**. Through `drive.json` + url params, someone can still pick another version.
+- Add a **`future`** field to `drive.json` (next to `latest`), for the version under development, so devs aren't asked to update.
+- **(24/6) STATE moves to datashell:** serapath copied the latest STATE.js, io.js and localdb.js into datashell. Ali should fork it, continue there, and make PRs. All projects should use a minimal `boot.js` with the datashell fork's STATE.js. (Ali: `init.js` is missing there.)
+- **example4** used the quick editor only to have an editor. Ali removed it, since the quick editor now lives in ui-components. Serapath: add **preview links** of example pages as outputs.
+- **New bugs from people using STATE "wrong"**, both in Hassan's `input-integer-state-version` repo:
+  - **[Bug 1 (25/6)](https://discord.com/channels/859134561018839060/1386708539526877215/1387178216808255609), endless loop:** [page.js fallback](https://github.com/HassanRaja533/input-integer-state-version/blob/ae249c155a5ec59ec1b503c78536d6f14f59753a/web/page.js). It **froze serapath's machine**. The `_` entry for the sub uses names (`age`, `birthyear`) instead of `$` / `0`, `1`, puts a `drive` in each, and uses `value:` instead of `raw:` for files. Serapath: "the way it is being used is mental, BUT there should be a meaningful error message".
+  - **[Bug 2 (26/6)](https://discord.com/channels/859134561018839060/1386708539526877215/1387539447834476625), paths as keys:** [page.js:57-72](https://github.com/HassanRaja533/input-integer-state-version/blob/d651b9e391743cb0514067501cec07b0391f7613/web/page.js#L57-L72). The drive uses `'data/age.opts.json'` as one key, instead of one folder / file name per level (`'data/': { 'age.opts.json': … }`), and again `value:` instead of `raw:`.
+  - The right shape, for comparison: `drive: { 'lang/': { 'en-us.json': { raw: … } } }` and `_: { icon: { $: '' } }` ([example1/btn.js:137-149](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/web/example1/node_modules/btn.js#L137-L149)). Ali: their files don't follow the structure at all; does STATE need an error for all of that? Serapath: yes. STATE must be [**"crazy robust"**](https://discord.com/channels/859134561018839060/1386698805528760380/1387542948324839545):
+  - **strict input validation**
+  - never an internal error like "cannot read undefined"
+  - every error **links to the docs**
+  - "when people make mistakes, it should never look like a bug in STATE"
+
+**Status today (checked in datashell):**
+- ✅ **`drive.put` → `onbatch`:** `put` calls the node's listeners ([STATE.js:1045-1046](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1045-L1046)). Still needs a test (#39).
+- ✅ **STATE in datashell:** STATE.js, io.js, localdb.js live in `datashell/lib/node_modules`, and pages load them through `shim.js` + `drive.json`. No `init.js` needed anymore.
+- 🟠 **`drive.json`:** has `stable` and `latest`, but no `future` ([drive.json](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/drive.json)).
+- 🟠 **Peer ids:** sub ids are already Symbols (`s2i`, [STATE.js:689](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L689)), but io addresses are random number strings from `encode()` ([STATE.js:695-701](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L695-L701), made with `Math.random`), not Symbols.
+- ⏳ **`{ type, data }` check in io:** io.js doesn't check messages ([io.js](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/io.js)). Also `at()` still returns a port (see 272).
+- ⏳ **`resource()` helper:** not in datashell. It belongs in a helper module, not STATE.
+- 🟠 **Errors with doc links:** STATE has ~26 `FAIL.*` messages with a doc link ([STATE.js:1248](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1248)). But not everything is validated, and some errors are still internal (e.g. the `subi,d` typo throws `ReferenceError`).
+- ❓ **Editor for sub-components + export / import:** in ui-components / the devkit, not in datashell (see 274).
+
+**Questions for serapath:**
+- **io:** should io (or net.js) throw on messages that aren't `{ type, data }`? It fits the 273 convention.
+- **Peer ids:** should io / net.js addresses become `Symbol`s?
+
+**Affects my work:**
+- **Test:** `drive.put` triggers `onbatch` (already in #39 3️⃣).
+- **Robust errors:** each fix in #39 4️⃣ should end with a clear error that links to the docs, never an internal one. The `subi,d` typo is exactly that kind of bug.
+- **Tests with "wrong" input:** add some cases where a module uses STATE the wrong way (missing fields, wrong structure) and check that a clear error comes, not a crash or an endless loop.
+- **Messages:** my postMessage test results already use `{ type, data }` (273).
+
+**From the video (4 min):**
+- **0:21 Demo:** edit, apply → `onbatch` runs and the change is saved in localStorage.
+- **0:41 How it works:** next to each component, the page adds an editor, collects all datasets of that component and sends them to its editor. The page also sends its own id, so the editor can talk back.
+- **1:41 New `net` shape:** `net` holds component ids, and under each one the events (e.g. `click` → send some data). The connection starts only once.
+- **2:46 The id** is a random code made on each load, so it can't be guessed. He thinks that's secure. (Serapath later: make it a `Symbol`.)
+- **3:21 `io.at` returning a port** "is not allowed", but he didn't know a workaround (serapath's answer: `resource()`).
+- **4:03** "That was a lot of work, partly because STATE isn't clean. We desperately need that sanitization."
