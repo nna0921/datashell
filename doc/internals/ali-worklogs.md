@@ -21,6 +21,7 @@ What it's for: Ali didn't always track what was done, so the "status today" part
 | 274 | 12/6/2025 | first `quick_editor` (CSS editor, built into each component); serapath: wrong approach, use a container component + `sdb.admin` instead | the container component, its io protocol with the root, saving edits to the `style` dataset | yes: `sdb.admin` is what the devkit (sys_ui) task in #39 builds on |
 | 275 | 18/6/2025 | quick editor v0.0.2: dataset tabs, file buttons; serapath's feature requests: async storage + `admin.on(callback)`, stable vs dev versions (`drive.json`), safe drive access for editors | async storage, the version update prompt, safe access (invite codes / mount points), docs for every feature | yes: `drive.put` → `onbatch` test, `admin.on` events, docs |
 | 276 | 23/6/2025 | quick editor v0.0.3 (apply, saved to localStorage); `drive.put` now triggers `onbatch`; STATE moves to datashell | `{ type, data }` check in io, peer ids as `Symbol`, the `resource()` helper, strict input validation, `future` version in `drive.json`, editor for sub-components + export / import | yes: `put` → `onbatch` test, io message check, error messages |
+| thread | 23/6–27/7/2025 | **STATE bugs and features:** devs post STATE bugs for Ali (Hassan's repo, flamingo-wallet) | wrong-use bugs (endless loop, paths as keys, `require('../src/index')`), `$ref` in instance data, an easier way to theme a sub | yes: wrong-input tests, a list-of-subs test, flamingo-wallet |
 
 ---
 
@@ -535,10 +536,7 @@ links: [video](https://youtu.be/SrpXgndm87s) · [GitHub: quick_editor (#41)](htt
 - Add a **`future`** field to `drive.json` (next to `latest`), for the version under development, so devs aren't asked to update.
 - **(24/6) STATE moves to datashell:** serapath copied the latest STATE.js, io.js and localdb.js into datashell. Ali should fork it, continue there, and make PRs. All projects should use a minimal `boot.js` with the datashell fork's STATE.js. (Ali: `init.js` is missing there.)
 - **example4** used the quick editor only to have an editor. Ali removed it, since the quick editor now lives in ui-components. Serapath: add **preview links** of example pages as outputs.
-- **New bugs from people using STATE "wrong"**, both in Hassan's `input-integer-state-version` repo:
-  - **[Bug 1 (25/6)](https://discord.com/channels/859134561018839060/1386708539526877215/1387178216808255609), endless loop:** [page.js fallback](https://github.com/HassanRaja533/input-integer-state-version/blob/ae249c155a5ec59ec1b503c78536d6f14f59753a/web/page.js). It **froze serapath's machine**. The `_` entry for the sub uses names (`age`, `birthyear`) instead of `$` / `0`, `1`, puts a `drive` in each, and uses `value:` instead of `raw:` for files. Serapath: "the way it is being used is mental, BUT there should be a meaningful error message".
-  - **[Bug 2 (26/6)](https://discord.com/channels/859134561018839060/1386708539526877215/1387539447834476625), paths as keys:** [page.js:57-72](https://github.com/HassanRaja533/input-integer-state-version/blob/d651b9e391743cb0514067501cec07b0391f7613/web/page.js#L57-L72). The drive uses `'data/age.opts.json'` as one key, instead of one folder / file name per level (`'data/': { 'age.opts.json': … }`), and again `value:` instead of `raw:`.
-  - The right shape, for comparison: `drive: { 'lang/': { 'en-us.json': { raw: … } } }` and `_: { icon: { $: '' } }` ([example1/btn.js:137-149](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/web/example1/node_modules/btn.js#L137-L149)). Ali: their files don't follow the structure at all; does STATE need an error for all of that? Serapath: yes. STATE must be [**"crazy robust"**](https://discord.com/channels/859134561018839060/1386698805528760380/1387542948324839545):
+- **New bugs from people using STATE "wrong"** (in the "STATE bugs and features" thread, see the next section). Ali: their files don't follow the structure at all; does STATE need an error for all of that? Serapath: yes. STATE must be [**"crazy robust"**](https://discord.com/channels/859134561018839060/1386698805528760380/1387542948324839545):
   - **strict input validation**
   - never an internal error like "cannot read undefined"
   - every error **links to the docs**
@@ -571,3 +569,55 @@ links: [video](https://youtu.be/SrpXgndm87s) · [GitHub: quick_editor (#41)](htt
 - **2:46 The id** is a random code made on each load, so it can't be guessed. He thinks that's secure. (Serapath later: make it a `Symbol`.)
 - **3:21 `io.at` returning a port** "is not allowed", but he didn't know a workaround (serapath's answer: `resource()`).
 - **4:03** "That was a lot of work, partly because STATE isn't clean. We desperately need that sanitization."
+
+---
+
+## Thread: STATE bugs and features (23/6–27/7/2025, between 276 and 277)
+
+links: [Discord thread](https://discord.com/channels/859134561018839060/1386708539526877215)
+
+**What it is:** serapath opened it for Ahmad, Azim and Ibrar: everyone building components with STATE posts bugs, problems and feature ideas there, for Ali. One message per person, edited when something new comes up. First step: update to the latest STATE and report what's still broken.
+
+**The posts:**
+1. **[Bug 0 (serapath, 23/6)](https://discord.com/channels/859134561018839060/1386708539526877215/1386737591461875712), endless recursion:** on first load, a page built a name like `undefined>undefined>undefined>…` forever ([Hassan's repo @db3df50](https://github.com/HassanRaja533/input-integer-state-version/tree/db3df50240508d9a280dc132af07def755184891)). Should be caught with a clear error. Azim (24/6): fixed by Ali.
+2. **[Bug 1 (serapath, 25/6)](https://discord.com/channels/859134561018839060/1386708539526877215/1387178216808255609), endless loop that froze his machine:** [Hassan's page.js fallback](https://github.com/HassanRaja533/input-integer-state-version/blob/ae249c155a5ec59ec1b503c78536d6f14f59753a/web/page.js). The `_` entry for the sub uses names (`age`, `birthyear`) instead of `$` / `0`, `1`, puts a `drive` in each, and uses `value:` instead of `raw:`. "The way it is being used is mental, BUT there should be a meaningful error message."
+3. **[Bug 2 (serapath, 26/6)](https://discord.com/channels/859134561018839060/1386708539526877215/1387539447834476625), paths as keys:** [page.js:57-72](https://github.com/HassanRaja533/input-integer-state-version/blob/d651b9e391743cb0514067501cec07b0391f7613/web/page.js#L57-L72). The drive uses `'data/age.opts.json'` as one key, instead of one name per level (`'data/': { 'age.opts.json': … }`), and again `value:` instead of `raw:`.
+   - The right shape, for comparison: `drive: { 'lang/': { 'en-us.json': { raw: … } } }` and `_: { icon: { $: '' } }` ([example1/btn.js:137-149](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/web/example1/node_modules/btn.js#L137-L149)).
+4. **[Misuse or feature? (serapath, 28/6)](https://discord.com/channels/859134561018839060/1386708539526877215/1388515404250484898):** instance data that points to a file in the **parent's** drive: `_: { '../src/index': { 0: { $ref: 'data/age.opts.json' } } }`. Serapath finds it interesting: a parent could give many sub instances the **same** file (e.g. a theme) as a link instead of a copy. Asked Ali for his thoughts.
+5. **[Bug 3 (serapath, 29/6)](https://discord.com/channels/859134561018839060/1386708539526877215/1388915114224123925):** [requiring the sub with `require('../src/index')` fails](https://github.com/HassanRaja533/input-integer-state-version/commit/cf810b7d265942158ef10aae0c9e6157c914d825). With `require('..')` it [loads, but fails with another error](https://github.com/HassanRaja533/input-integer-state-version/commit/bcdcc825dd6c769760cba0afdeccfb8db2fec7db). Serapath: page.js and src/index.js look right, this should work.
+6. **(29/6)** Serapath asks how much time Ali has, and whether a **second dev should learn STATE** too.
+7. **[How to give a sub instance a custom theme (serapath, 1/7)](https://discord.com/channels/859134561018839060/1386708539526877215/1389385018387988562):** today the only way (Ali) is an override that wraps the sub's `api` and adds `drive['style/']` to the instance:
+   ```js
+   _: { '..': { $: override, 0: { value: { min: 0, max: 10 } }, mapping: { style: 'style', data: 'data' } } }
+   function override (opts, _, [f]) {
+     const state = f(); const api = state.api
+     state.api = (...args) => { const instance = api(...args); instance.drive['style/'] = { /* theme */ }; return instance }
+     return state
+   }
+   ```
+   Serapath: keep it until STATE is finished, stable and documented. Then a separate round of thinking about making it smoother.
+8. **[No `drive` in a fallback (serapath, 2/7)](https://discord.com/channels/859134561018839060/1386708539526877215/1389704224778227903):** should be fine, STATE should just add an empty `drive: {}`. Ali added it to his proposals.
+9. **Ibrar's flamingo-wallet (25–27/7):** `contacts_list` creates many `contact_row`s from a list it gets from `page.js`, and he didn't know how to pass each contact to its row with STATE. [Serapath's review](https://discord.com/channels/859134561018839060/1386708539526877215/1398611532706746399):
+   - `page.js` is fine
+   - [contacts_list.js:58-60](https://github.com/ibrarli/flamingo-wallet/blob/main/src/node_modules/contacts_list/contacts_list.js#L58-L60) doesn't use the `sid`
+   - its fallback lists **itself** as a sub instead of `contact_row` ([L82-92](https://github.com/ibrarli/flamingo-wallet/blob/main/src/node_modules/contacts_list/contacts_list.js#L82-L92))
+   - `contact_row` doesn't load its state through the `sid` ([contact_row.js:8](https://github.com/ibrarli/flamingo-wallet/blob/main/src/node_modules/contact_row/contact_row.js#L8))
+   - Ibrar had skipped the `sid` because it gave an error. Ali fixed it.
+
+**Status today (checked in datashell):**
+- ✅ **Bug 0:** the name loop now stops with `FAIL.state_init` when no parent is found ([STATE.js:128-135](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L128-L135)).
+- ❓ **Bugs 1, 2, 3:** not known if fixed. Only a test with Hassan's exact fallbacks can tell. The validation rules list `raw` / `$ref` as required for files ([STATE.js:1356-1357](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1356-L1357)), so `value:` might give an error now.
+- ⏳ **`$ref` in instance data (4):** not supported. Instance entries are plain data (args), so a `$ref` there is just passed on, not resolved.
+- 🟠 **Theming a sub (7):** still only through the override that wraps `api`. Not in the docs.
+- ✅ **No `drive` (8):** a fallback without `drive` gets an empty one (`entry.drive = []`, [STATE.js:532](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L532)). Same idea as my PR#1 fix for a missing `api:`.
+- ❓ **flamingo-wallet:** fixed by Ali back then. It's in my #39 1️⃣ "run every app".
+
+**Questions for serapath:**
+- **`$ref` in instance data (4):** is a parent giving its subs a **link** to one of its own files (e.g. a shared theme) still wanted as a feature?
+
+**Affects my work:**
+- **Wrong-input tests (#39 4️⃣):** use the real cases from this thread: bug 1 (names instead of `$` / `0`, `value:`), bug 2 (paths as keys), bug 3 (`require('../src/index')` vs `require('..')`). Each should give a clear error with a doc link, never a freeze.
+- **Test:** a list component that makes **many** sub instances, each with its own data through the `sid` (like flamingo-wallet's `contacts_list` → `contact_row`). It's a common case, and it went wrong before.
+- **Docs:** how to theme a sub instance (the `api` wrapper), until there's an easier way.
+- **"A second dev should learn STATE":** that's me now.
+
