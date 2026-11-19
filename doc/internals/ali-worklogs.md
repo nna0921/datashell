@@ -474,9 +474,9 @@ links: [video](https://youtu.be/_3DYmwV37mA) · [GitHub: quick_editor (#41)](htt
   - Ali: first try what already exists. Two ways: send the component's id through overrides / io, or let the root find each editor and give it access. Serapath: how would the second one make sure the access is ready when the editor starts?
 - **Docs for every feature:** whenever a STATE feature is discussed, add notes / examples to the STATE docs, in the same worklog. Same for stable vs dev versions.
 - What does `subs['../src/node_modules/quick_editor'] = 0` in the fallback mean? (not answered)
-- Coordinate with Ahmad on `page.js`, to avoid merge conflicts.
-- **Bug (22/6):** in Ahmad's repo, `drive.put` doesn't seem to trigger `watch(onbatch)`.
-- (23/6) Before his review: go through this thread and all linked ones, check what's done and what's open, and add it to the 276 proposals.
+- [Coordinate with Ahmad](https://discord.com/channels/859134561018839060/1385025685000818729/1385337232281309204) on `page.js`, to avoid merge conflicts.
+- **[Bug (22/6)](https://discord.com/channels/859134561018839060/1385025685000818729/1386384466142036138):** in Ahmad's repo, `drive.put` doesn't seem to trigger `watch(onbatch)`.
+- ([23/6](https://discord.com/channels/859134561018839060/1385025685000818729/1386708836966072360)) Before his review: go through this thread and all linked ones, check what's done and what's open, and add it to the 276 proposals.
 
 **Status today (checked in datashell):**
 - ✅ **`admin.on(callback)`:** `statedb.admin()` returns `{ on }`, and `on` saves the callback ([STATE.js:774-786](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L774-L786)). It's called with `{ type: 'create sdb', data: modulepath }` ([STATE.js:106](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L106), [STATE.js:220](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L220)), `{ type: 'put', data: id }` ([STATE.js:1047](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1047)) and `{ type: 'import', … }` ([STATE.js:1164](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1164)).
