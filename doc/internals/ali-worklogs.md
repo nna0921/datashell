@@ -1,4 +1,4 @@
-# Ali's worklogs 267–274 → notes
+# Ali's worklogs 267–275 → notes
 
 Plan by Serapath: watch Ali's worklogs 267–283 + their threads, note every task, bug and agreement, mark what's outdated and what's still open.
 
@@ -19,6 +19,7 @@ What it's for: Ali didn't always track what was done, so the "status today" part
 | 272 | 31/5/2025 | feedback from 271 implemented; io: `at()` must not return a port, connections restored after a reload; "Revamp STATE", keep it sync | io.at still returns a port and nothing is restored after a reload; STATE.js init code is still async (4 functions; the drive api may stay async); io/net reload concept not in docs | yes: the reload test, the sync rule for my fixes, `watch2` leftover |
 | 273 | 6/6/2025 | `onbatch` gets paths, not file contents; `{ type, data }` convention; first test-case list; rewrite STATE.js from scratch | batch is still `{ type: dataset, paths }` (whole dataset on every change, no `put` / `del` types); `on[type]` mixes datasets and messages; lint; the STATE rewrite | yes: a `watch` test (only the changed path), my net.js message shape |
 | 274 | 12/6/2025 | first `quick_editor` (CSS editor, built into each component); serapath: wrong approach, use a container component + `sdb.admin` instead | the container component, its io protocol with the root, saving edits to the `style` dataset | yes: `sdb.admin` is what the devkit (sys_ui) task in #39 builds on |
+| 275 | 18/6/2025 | quick editor v0.0.2: dataset tabs, file buttons; serapath's feature requests: async storage + `admin.on(callback)`, stable vs dev versions (`drive.json`), safe drive access for editors | async storage, the version update prompt, safe access (invite codes / mount points), docs for every feature | yes: `drive.put` → `onbatch` test, `admin.on` events, docs |
 
 ---
 
@@ -439,3 +440,66 @@ links: [video](https://youtu.be/JUNCN6aeVUc) · [GitHub: quick_editor (#41)](htt
 - **0:22 Why a helper module:** overrides can't inject scripts, so building the editor with overrides wasn't possible. He used an "unusual" helper module that keeps its values when other modules require it.
 - **1:03 Demo:** a button in the root turns editing on. The editor is in `app` and `nav`, and shows `nav`'s CSS. Changes apply live. A title (which module you're editing) is still missing.
 - **2:02 Not saved yet:** saving needs the drive, and maybe changes to it, e.g. a new theme for the edits so the original theme's CSS isn't lost. "Needs more planning."
+
+---
+
+## 275: quick editor v0.0.2 + feature requests for STATE (18/6/2025)
+
+links: [video](https://youtu.be/_3DYmwV37mA) · [GitHub: quick_editor (#41)](https://github.com/playproject-io/playproject-io.github.io/issues/41#issuecomment-2985879557) · [serapath's feedback (#41)](https://github.com/playproject-io/playproject-io.github.io/issues/41#issuecomment-2988175453) · [Discord thread 19–29/6/2025](https://discord.com/channels/859134561018839060/1219764849349755053/1385025685000818729)
+
+**What he did:** [quick_editor_v0.0.2](https://github.com/alyhxn/ui-components/commit/cd4cde39122c903fc4f76ddf3ef2b2acbce0d0ab) (9h, in his ui-components fork): worked on the 274 feedback, added **dataset tabs** and **file buttons**, and fetches the datasets of the previewed component.
+- **Proposals:** add more features to the quick editor, make it a standard component.
+
+**Serapath's feedback on the editor (GitHub):**
+1. Tabs, file buttons and an "apply" button look great.
+2. The editor should get a **dataset name** (maybe an array) and show only that. On the ui-components page: only `["style"]`.
+3. **The video should also explain the code:** how the right content gets into the editor. The STATE apis behind it matter more than the editor itself.
+4. Proposals should be concrete tasks, e.g. "add file" / "delete file" buttons, and in the page's top menu: **export** everything as a file and **import** a file as a theme.
+
+**Serapath's feature requests for STATE (Discord, needed for the revamp):**
+1. **Async storage:** the root module (the first one that requires STATE) can pass in a **storage object with async methods** (localStorage or any other api).
+2. **`statedb.admin.on(callback)`:** the root registers a callback right away. It gets `{ type, data }` every time an `sdb` or `io` object is created or used, with the modulepath in `data` and the kind of use in `type`.
+
+**Serapath's other points (Discord):**
+- **Stable vs dev versions:** why does the commit hold a full copy of STATE, io, localdb and init? (Ali: to fix STATE bugs on the go while working in ui-components.) Plan:
+  - one **stable** version for all apps
+  - a url param to load another version (another folder, or localhost) for development
+  - publish the **latest version hash in the docs**
+  - a **`drive.json`** with `latest` + `versions` (the links / commit hashes of each file), so `boot.js` only fetches that file
+  - remember the used version in localStorage; if a newer one exists, ask `confirm('update to latest version?')`. On cancel, put `#version=2` in the url, and only ask again once that's removed
+  - an even simpler `boot.js`: fetch `init.js` and run it with the version
+- **Security:** `page.js` gives the editor the **admin drive** and the previewed component's id. Ids are guessable, so a malicious editor could open any drive. His idea:
+  - the root (`page.js`) creates **invite codes** through its admin api, each mapped to a modulepath, **readonly** or **writable**, and to certain datasets. The root can **revoke** them.
+  - the editor's override sets a dataset to `{ $ref: 'drive://<invitecode>' }`, so that dataset becomes a **mount point** for data from another drive
+  - Ali: first try what already exists. Two ways: send the component's id through overrides / io, or let the root find each editor and give it access. Serapath: how would the second one make sure the access is ready when the editor starts?
+- **Docs for every feature:** whenever a STATE feature is discussed, add notes / examples to the STATE docs, in the same worklog. Same for stable vs dev versions.
+- What does `subs['../src/node_modules/quick_editor'] = 0` in the fallback mean? (not answered)
+- Coordinate with Ahmad on `page.js`, to avoid merge conflicts.
+- **Bug (22/6):** in Ahmad's repo, `drive.put` doesn't seem to trigger `watch(onbatch)`.
+- (23/6) Before his review: go through this thread and all linked ones, check what's done and what's open, and add it to the 276 proposals.
+
+**Status today (checked in datashell):**
+- ✅ **`admin.on(callback)`:** `statedb.admin()` returns `{ on }`, and `on` saves the callback ([STATE.js:774-786](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L774-L786)). It's called with `{ type: 'create sdb', data: modulepath }` ([STATE.js:106](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L106), [STATE.js:220](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L220)), `{ type: 'put', data: id }` ([STATE.js:1047](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1047)) and `{ type: 'import', … }` ([STATE.js:1164](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1164)).
+  - 🟠 but io calls it as `callback('Connect', alias)` ([io.js:13](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/io.js#L13)), not `{ type, data }`. And "used" (not only created) isn't reported.
+- ⏳ **Async storage:** `admin(imported_db = localdb)` takes a db, but localdb is sync (localStorage). No async storage yet. (Note: serapath's 2026 rule says init should be sync, see 271. So this needs a check.)
+- 🟠 **`drive.json` versions:** exists ([drive.json](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/drive.json)) with `stable`, `latest` and version `1`, and the shim uses it. The update prompt is still a `@TODO` ([shim.js:432-433](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/shim.js#L432-L433)). Version `1` points to `main`, which serapath is fine with for now (see 269).
+- ✅ **A dev version via url:** `#dev=` loads a local STATE.js, and now survives reloads (my 2 shim commits).
+- ⏳ **Latest version hash in the docs:** not there.
+- ⏳ **Safe drive access (invite codes, mount points, readonly / writable, revoke):** not in STATE.js (no `drive://`).
+- ✅ / ❓ **`drive.put` → `onbatch`:** today `put` calls the node's listeners ([STATE.js:1045-1046](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1045-L1046)). Ahmad's bug may be fixed, but only a test can tell.
+- ⏳ **Docs for every feature:** part of the docs review (269).
+- ❓ **The editor features** (dataset name, add / delete file, export / import): in ui-components, not in datashell.
+
+**Questions for serapath:**
+- **Async storage:** is passing in an **async** storage object still wanted, given the 2026 rule that init should be sync?
+- **Safe drive access:** is the invite code / mount point idea still the plan, or does the devkit (sys_ui) through `sdb.admin` replace it?
+
+**Affects my work:**
+- **Test:** `drive.put` triggers `onbatch` (Ahmad's bug). Goes with the batch shape tests (#39 3️⃣).
+- **Test:** `admin.on(callback)` gets `{ type, data }` for every created `sdb`. Also make io use `{ type, data }` (fits "all messages use `{ type, data }`", 273).
+- **Docs:** every feature I add or fix gets notes / examples in the docs, in the same worklog.
+- **Video:** explain the code, not only the result.
+
+**From the video (2 min):**
+- **0:20 Demo:** the editor shows the datasets and their files. For now you can only view them, no apply / save yet.
+- **1:21 His approach:** start a new component without shadow dom, using fallbacks and overrides. Everything it needs comes in as **args**, e.g. the `id` of the node the editor is for. That can come through overrides, or through io / the root's dataset api. He keeps it so it can become a standard module.
