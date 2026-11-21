@@ -1,4 +1,4 @@
-# Ali's worklogs 267–277 → notes
+# Ali's worklogs 267–278 → notes
 
 Plan by Serapath: watch Ali's worklogs 267–283 + their threads, note every task, bug and agreement, mark what's outdated and what's still open.
 
@@ -24,6 +24,7 @@ What it's for: Ali didn't always track what was done, so the "status today" part
 | thread | 23/6–27/7/2025 | **STATE bugs and features:** devs post STATE bugs for Ali (Hassan's repo, flamingo-wallet) | wrong-use bugs (endless loop, paths as keys, `require('../src/index')`), `$ref` in instance data, an easier way to theme a sub | yes: wrong-input tests, a list-of-subs test, flamingo-wallet |
 | 277 | 30/6/2025 | quick editor v0.0.4 (sub-components); bug fixes from the bugs thread; STATE moves to datashell with the new `boot.js` + `shim.js`; serapath's full STATE task list | drive path keys (`'data/x.json'`), `$ref` in instance args, admin storage & hooks, strict validation, test list, docs for `admin` / `get_sub` / techniques, the revamp | yes: most of #39 4️⃣ comes from this list |
 | thread | 3/7–18/9/2025 | **STATE bugs & features, part 2:** sub `type`s, re-loading an instance by `sid`, Ahmad's `drive.put` bug, passing data to many subs, files from external repos | relative sub types with instance ids, reuse a `sid` after discard, the `put` bug, external file resolvers (package.json, iframe) | yes: sub `type` test, `sid` reuse test, `put` test, flamingo-wallet |
+| 278 | 16/7/2025 | quick editor v0.0.6: export / import of the whole localStorage; why no register / switch of datasets (subs can't make their own dataset, because of `mapping`); serapath: version-tag exports, document the admin api, a task list until the revamp, update PR #4 | version tag on export, admin api docs, root-only import / export in a global menu, PR #4 (closed, not merged) | yes: export / import tests, admin api docs, the devkit's global menu |
 
 ---
 
@@ -764,3 +765,55 @@ links: [Discord thread](https://discord.com/channels/859134561018839060/13904003
 - **Subs from data:** a list with N entries makes N rows, and a reload still shows N (not 2N). Today there's no `sdb.add`, so first ask serapath.
 - **flamingo-wallet** (#39 1️⃣): check `contacts_list` and `transaction_history` with many sub instances.
 - **Comments in STATE.js:** explain the why, not only the what (serapath).
+
+---
+
+## 278: quick editor export / import (16/7/2025)
+
+links: [video](https://youtu.be/37jvwwgZzAk) · [GitHub: quick_editor (datashell #5)](https://github.com/playproject-io/datashell/issues/5#issuecomment-3080896948) · [Discord: worklog post](https://discord.com/channels/859134561018839060/1219764849349755053/1395164350582624316) · [Discord thread 17/7–19/8/2025](https://discord.com/channels/859134561018839060/1395164350582624316)
+
+**What he did:**
+- [quick_editor_v0.0.6](https://github.com/alyhxn/ui-components/commit/fc6b6af41488ee6f4e1d65e880effd4e1b2cbead) (3h40): **export** (download) and **import** (upload) buttons. For now they save and load **the whole localStorage**, not one dataset.
+- He didn't build it with datasets because of two limits:
+  - [there is no **register**](https://discord.com/channels/859134561018839060/1395164350582624316/1398852328408223805) (add a new dataset) and **switch** (turn off the active dataset, turn on another one) in the editor yet. The editor only shows the **active** datasets. Showing the others needs another row of tabs.
+  - **a sub can't make its own new dataset.** Because of `mapping`, every dataset of a sub belongs to a **group** that the root made, and a switch changes the whole group across the site. With only the root's `default` group, a sub's new dataset would replace `default` and lose its data.
+- **No compatibility:** a file exported before a project change can't be imported after it.
+
+**Serapath's feedback (Discord, 23–27/7):**
+- **Update [PR #4](https://github.com/playproject-io/datashell/pull/4)** so he can merge: [pull the changes and fix the conflicts](https://discord.com/channels/859134561018839060/1395164350582624316/1397532511667486750), ideally with [**`git rebase`**](https://discord.com/channels/859134561018839060/1395164350582624316/1397676334607634586). He has more datashell changes waiting for it.
+- [He didn't understand](https://discord.com/channels/859134561018839060/1395164350582624316/1397704909054546056) "register and switch", "another level of tabs", "datasets must be defined in the root first". After Ali explained: ["oh I see… like theme switching"](https://discord.com/channels/859134561018839060/1395164350582624316/1398954949232295987). Idea: a **dropdown** next to the datasets to switch, plus buttons to **add** and **delete** one.
+- Import / export can be **root-only** in the api. The quick editor then just sends messages asking the root to do it.
+- **Export / import buttons** maybe belong once, in the **global menu** on top, not in every quick editor.
+- **At least: tag every export with a version**, so an import can tell if it fits the project, and doesn't break an updated project.
+- Make **another worklog about the code**: how the quick editor uses the admin api / `sdb` for each feature (not STATE internals).
+- **Document every admin api feature** well, old and new.
+- **An overview of what's left until the STATE revamp**, with a link to an up-to-date task list. "Very exact and strict" task management matters, since he reviews 8 people with gaps in between.
+- Ali: pause the quick editor, it works for now; the most important feature is compatibility. Serapath: **"nah its important - we want a complete solution"**.
+- Ali (27/7): "making the list". Serapath asked again on 30/7 and 19/8; Ali: still working on it.
+
+**Status today (checked in datashell):**
+- ✅ **Export / import in STATE:** the admin api has `export_db` / `import_db` (one dataset), `export_root` / `import_root`, and `load(snapshot)` that replaces the whole db and reloads ([STATE.js:867-880](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L867-L880), [STATE.js:1159-1242](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1159-L1242)). So not only "whole localStorage" anymore.
+- ✅ **Register / switch in STATE:** `register` and `unregister` ([STATE.js:1106-1157](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1106-L1157)) and `swtch` (switch, spelled without the `i`, [STATE.js:892-924](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L892-L924)) exist in the admin api.
+- ⏳ **Version tag on export:** missing. `export_db` saves only `name`, `type` and the files ([STATE.js:1179-1193](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1179-L1193)). `VERSION = 13` ([STATE.js:6](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L6)) is only used to wipe the local db when STATE changes ([STATE.js:780-783](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L780-L783)). Importing an old file is not checked.
+- 🟠 **Datasets "root first":** still true. A sub's dataset needs a `mapping` to a dataset of its hub, otherwise `FAIL.nomapping` ([STATE.js:578-592](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L578-L592)).
+- ⏳ **Admin api docs:** `register`, `unregister`, `swtch`, `load`, import / export, `get_dataset` are not in `doc/api.md`. [doc/state/usage.md](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/doc/state/usage.md) still describes an older admin (`xget`, `add_admins`, `req_access`).
+- ⏳ **PR #4:** closed, **not merged**. Not checked if its changes reached datashell another way.
+- ❓ **Global menu, dataset dropdown, "the code" worklog:** in ui-components / the devkit, not datashell. To check in 279+.
+
+**Questions for serapath:**
+- **Version tag:** which version goes in an export: STATE's `VERSION`, the `drive.json` version, or the project's own version?
+- **Subs making their own datasets:** keep "root first" (via `mapping`), or should a sub be able to add one?
+- **PR #4** was closed without a merge. Did its changes get into datashell another way?
+
+**Affects my work:**
+- **Tests (#39 4️⃣):** export → import gives back the same state. Importing a file from another version → a clear error, no broken data.
+- **Docs (#39 4️⃣, "docs for admin"):** add `register`, `unregister`, `swtch`, `load`, import / export, `get_dataset`, and fix the old `doc/state/usage.md`.
+- **Devkit (#39 5️⃣, with Ahmad):** export / import and the dataset dropdown fit the global menu of the sys_ui.
+- **PRs to datashell:** fix conflicts with `git rebase`, as serapath asks.
+
+**From the video (4 min):**
+- **0:10** Export and import work, but they download / upload the whole localStorage.
+- **0:31** Why: no register and switch for datasets yet, and you can't even pick the dataset in use. That needs another row of tabs.
+- **0:49 The bigger problem:** a sub's datasets must be defined in the root first, so a sub can't create a new one. So he used localStorage directly.
+- **1:52** Limit: no backward compatibility. An exported file can't be used after the project changes.
+- **2:19 Demo:** change the background color, apply, export, clear, reload, import. The changes come back at once, for the whole site (CSS and content). Since it's global, it fits the theme editor better than each component.
