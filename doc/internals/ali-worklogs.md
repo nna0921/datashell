@@ -1,4 +1,4 @@
-# Ali's worklogs 267–278 → notes
+# Ali's worklogs 267–279 → notes
 
 Plan by Serapath: watch Ali's worklogs 267–283 + their threads, note every task, bug and agreement, mark what's outdated and what's still open.
 
@@ -25,6 +25,7 @@ What it's for: Ali didn't always track what was done, so the "status today" part
 | 277 | 30/6/2025 | quick editor v0.0.4 (sub-components); bug fixes from the bugs thread; STATE moves to datashell with the new `boot.js` + `shim.js`; serapath's full STATE task list | drive path keys (`'data/x.json'`), `$ref` in instance args, admin storage & hooks, strict validation, test list, docs for `admin` / `get_sub` / techniques, the revamp | yes: most of #39 4️⃣ comes from this list |
 | thread | 3/7–18/9/2025 | **STATE bugs & features, part 2:** sub `type`s, re-loading an instance by `sid`, Ahmad's `drive.put` bug, passing data to many subs, files from external repos | relative sub types with instance ids, reuse a `sid` after discard, the `put` bug, external file resolvers (package.json, iframe) | yes: sub `type` test, `sid` reuse test, `put` test, flamingo-wallet |
 | 278 | 16/7/2025 | quick editor v0.0.6: export / import of the whole localStorage; why no register / switch of datasets (subs can't make their own dataset, because of `mapping`); serapath: version-tag exports, document the admin api, a task list until the revamp, update PR #4 | version tag on export, admin api docs, root-only import / export in a global menu, PR #4 (closed, not merged) | yes: export / import tests, admin api docs, the devkit's global menu |
+| 279 | 24/7/2025 | STATE v0.0.25: pluggable storage + `admin.on` hooks, overrides use their own files (`$ref` + `address`), path keys (`'theme/style.css'`), helper subs as `0`; serapath: hooks are root / admin only, no `address`, document every feature, list every task in the top comment; PRs #7 and #10 merged | `admin.on` events for every load / io / drive change, a `del` in the drive, docs for all of it, the leftover `drive.put` test in nav.js, `#dev=` broken on main | yes: `admin.on` test, path-key test, docs, CONTRIBUTING (`#dev=`) |
 
 ---
 
@@ -687,19 +688,19 @@ links: [video](https://www.youtube.com/watch?v=YI-fZzkj1DM) · [GitHub: quick_ed
 - ✅ **New boot way:** the [README](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/README.md) shows exactly the `index.html` + `boot.js` + `npx browserify -i STATE …` setup.
 - 🟠 **The version file** is `drive.json`, not `shim.json` ([drive.json](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/drive.json)).
 - ⏳ **Trailing `;` fix in `wrap`:** not in `shim.js` ([shim.js:440-451](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/shim.js#L440-L451) has no `endsWith(';')` check). Maybe the `-i STATE` command makes it unneeded. Needs a check.
-- ⏳ **Path keys in the drive (`'data/x.json'`):** not allowed. The validation expects `drive: { 'folder/': { 'file': { raw | $ref } } }` ([STATE.js:1345-1362](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1345-L1362)), so a path key gives an error.
+- ✅ **Path keys in the drive (`'data/x.json'`):** allowed, Ali added them in 279. (I first wrote "gives an error" here; that was wrong, see 279.)
 - ⏳ **`$ref` in instance args, admin storage & hooks, revokable drive links, non-STATE subs:** not built (see 267, 273, 275 and the bugs thread).
 - 🟠 **`sdb.get_sub`:** exists ([STATE.js:931-934](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L931-L934)) with a `// @TODO: maybe remove?`, and it's **not in `doc/api.md`**.
 - ⏳ **Docs for `statedb.admin`** and its fields: not in `doc/api.md`.
 - ❓ **Examples on the new shim, export / import, editor learns about drive changes:** to check (examples in #39 1️⃣; the editor is in ui-components / the devkit).
 
 **Questions for serapath:**
-- **Path keys:** is "allow `'data/x.json'` next to nested folders, last one wins, warn on conflict" still the plan? Today it's an error.
+- **Path keys:** moved to 279 (they work today, but the folder style always wins, not the last one).
 - **`sdb.get_sub`** has `@TODO: maybe remove?`. Keep and document it, or remove it?
 
 **Affects my work:**
 - **#39 4️⃣ comes mostly from this list:** test cases, strict validation, the `$ref` @TODO, docs, revamp. I'm continuing what this list started.
-- **Bug 2 test changes:** path keys should **work** (last one wins, with a warning), not throw. Once serapath confirms.
+- **Bug 2 test changes:** path keys **work** today, so the test checks that they work, not that they throw (see 279 for which one wins).
 - **Docs to write:** `statedb.admin` fields, `sdb.get_sub`, and a "techniques" page (e.g. theming a sub, pairing with `get_sub`).
 - **His rule for me too:** before each worklog, list what's done and open from the last feedback.
 - **Moving projects to the new shim:** fits #39 1️⃣ (run every app).
@@ -817,3 +818,91 @@ links: [video](https://youtu.be/37jvwwgZzAk) · [GitHub: quick_editor (datashell
 - **0:49 The bigger problem:** a sub's datasets must be defined in the root first, so a sub can't create a new one. So he used localStorage directly.
 - **1:52** Limit: no backward compatibility. An exported file can't be used after the project changes.
 - **2:19 Demo:** change the background color, apply, export, clear, reload, import. The changes come back at once, for the whole site (CSS and content). Since it's global, it fits the theme editor better than each component.
+
+---
+
+## 279: STATE v0.0.25, storage + hooks, override files, path keys (24/7/2025)
+
+links: [video](https://youtu.be/SajE0YRPw_s) · [GitHub: STATE (datashell #6)](https://github.com/playproject-io/datashell/issues/6#issuecomment-3112392174) · [feedback (datashell #6)](https://github.com/playproject-io/datashell/issues/6#issuecomment-3117170249) · [Discord: worklog post](https://discord.com/channels/859134561018839060/1219764849349755053/1397883267038052403) · [Discord thread 24/7–21/8/2025](https://discord.com/channels/859134561018839060/1397883267038052403) · [Ali's task list (#6 top comment)](https://github.com/playproject-io/datashell/issues/6#issue-3258857766)
+
+**What he did** ([STATE_v0.0.24](https://github.com/alyhxn/playproject/commit/775b2c1921b865fa2ce333953e40d703a9af0f34) → [v0.0.25](https://github.com/alyhxn/playproject/commit/464666f6f1fcc49536fbc080ad63496edb2ace86), ~14h), the tasks from serapath's 277 list:
+- **Pluggable storage + hooks (1h):** the root can pass its own storage module (it must have the same methods as localdb). Without one, STATE uses localStorage.
+- **Overrides use their own files (5h):** `nav` overrides `btn` with `{ $ref: 'btn.css' }`, a file in **nav's** folder. To make it work he also passed an **`address`** (from the fallback's args) next to the `$ref`.
+- **Path keys (4h):** `'theme/style.css': { raw }` works next to `'theme/': { 'style.css': { raw } }`. If both are there, the folder style is used, with a console warning.
+- **Helper subs (30min):** a sub that isn't a STATE module (a helper) is given `0` in the fallback, so STATE doesn't throw for it. STATE can't know every helper by itself.
+- Debugging (3h) for the errors reported on Discord.
+
+**Serapath's feedback (GitHub, 25/7):**
+- the `drive.put` / `drive.get` `console.log` lines in nav.js look like a test and don't belong there.
+- **`address`** next to `$ref` is confusing.
+- **`statedb(fallback, localdb)` is wrong:** it lets every module pass its own db. The idea was: only **`statedb.admin`** (the root, a devtools feature) sets storage and hooks, and they apply to all `sdb`s.
+- **`admin.on(callback)`** gets `{ type, data }` every time:
+  - an `sdb` is made (`statedb(...)` for a module, `get(sid)` for an instance), e.g. `type: 'load'`, `data: <modulepath>`
+  - `io` connects
+  - `sdb.drive` changes files or folders (put / del)
+  - **Why:** the graph explorer can then show the real theme widget data, and every change, wherever it happens.
+
+**Serapath's feedback (Discord, 25–29/7):**
+- [**List every bug and feature explicitly**](https://discord.com/channels/859134561018839060/1397883267038052403/1398241544603041863) in the top-level comment, with Discord links as @inputs. "Remove bugs / add new features" says nothing. Every task in a worklog comment must also be in the top comment.
+- **No feature is done without its docs**, e.g. storage and hooks, override files, path keys and which one wins.
+- **Path keys:** document the rule. It wasn't clear if the folder style always wins, or whatever is defined last. The warning is great.
+- [**An old `{ sid: '' }`**](https://discord.com/channels/859134561018839060/1397883267038052403/1398252393900015679) showed up (in a screenshot); remove it.
+- **localdb's api** may still change a lot once the p2p stack comes in.
+- [**Override files, two use cases:**](https://discord.com/channels/859134561018839060/1397883267038052403/1398255069589143642)
+  1. nav overrides btn's drive with its own `nav/btn.css`. Nothing special needed: STATE knows it's running nav's override, so `{ $ref: 'btn.css' }` **must** come from nav's folder.
+  2. nav replaces btn's `theme/` folder, but keeps btn's own `style.css`: save the file's ref id (a `Symbol`) first, then put it back.
+     ```js
+     const ref_id = data.drive['theme/']['style.css']
+     data.drive['theme/'] = custom
+     data.drive['theme/']['style.css'] = ref_id
+     ```
+  - Passing an `address` is awkward. Writing an override with a `$ref` already gives permission to fill the sub's drive with that file.
+  - Ali: both cases work already; he'll remove `address`. It was there because STATE didn't save **who** made an override. [Serapath: **save that**](https://discord.com/channels/859134561018839060/1397883267038052403/1398955630336938004), so you can debug where data came from when a fallback or override seems ignored. He also asks again about [the reload problem](https://discord.com/channels/859134561018839060/1397139757808615492/1398249508571316315) (rows added again on every reload, see part 2, post 4): Ali answered around it but skipped it. Ali put it in his task list as "Increase of instances on reload".
+- **Don't miss feedback:** go through the threads and the Discord **inbox** (mentions), collect everything, then solve it, mark it solved, or put it in the backlog.
+- **PRs:** PR #4 couldn't be rebased, so Ali made [PR #7](https://github.com/playproject-io/datashell/pull/7) (merged 27/7). Update datashell PRs **often** (even just `drive.json`), and put the PR in the worklog.
+- `init.js` isn't used anymore (now in shim.js): delete it. Update the "temp" repo too.
+- **Task format (28/7):** Ali found listing every task twice redundant and suggested a "table of contents" with version links in the top comment. Serapath: keep it as it is. **`from` / `next` links are the core**, they connect all tasks into one graph. Every task needs at least one output. A task messenger will automate it later.
+- **6/8:** a week with no news. STATE is critical; more time, or someone else takes it.
+- **19/8:** Ali is back:
+  - cleanup removed ~70 lines (repetition), not logged as a task
+  - `#dev=node_modules/` lets him use his local STATE. [Serapath: put it in a **contribute** section](https://discord.com/channels/859134561018839060/1397883267038052403/1407371512175919187) of the docs, for people who clone the repo to make PRs.
+  - [PR #10](https://github.com/playproject-io/datashell/pull/10) (merged 25/8). Serapath: "everything should always be in a worklog". Also check **Ahmad's STATE docs**. Ali: datashell has no docs folder, so he updates the docs in playproject for now.
+
+**Status today (checked in datashell):**
+- ✅ **Storage only through `admin`:** `statedb.admin(imported_db = localdb)` sets the db once ([STATE.js:774-786](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L774-L786)), as serapath asked. Example 1 passes `localdb` ([example1/page.js:4](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/web/example1/page.js#L4)).
+- 🟠 **`admin.on` events:** `'create sdb'` for modules and instances ([STATE.js:106](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L106), [STATE.js:220](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L220)), `'put'` ([STATE.js:1047](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1047)), `'import'`. But:
+  - io sends `callback('Connect', alias)`, not `{ type, data }` ([io.js:13](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/io.js#L13))
+  - there is no `del` in the drive, so no `del` event
+  - the type is `'create sdb'`, not `'load'`
+- ✅ **`address` is gone:** nav's override is just `{ $ref: 'btn.css' }` ([nav.js:136-140](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/web/example1/node_modules/nav/nav.js#L136-L140)). ❓ Not checked if STATE now saves **who** made an override.
+- ✅ **Path keys work:** validation lets them through, and example 1 uses both styles ([example1/page.js:132-133](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/web/example1/page.js#L132-L133)).
+  - 🟠 **Which wins:** the folder style, **always**, whatever the order. The path keys of that dataset are skipped, with the warning ([STATE.js:513-528](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L513-L528)). Serapath's 277 rule was "the last one wins". Needs a test and docs.
+- ✅ **Helper subs as `0`:** the fallback check allows `object | number` for subs ([STATE.js:1351](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1351)).
+- ⏳ **The test lines** are still in nav.js ([nav.js:40-41](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/web/example1/node_modules/nav/nav.js#L40-L41)).
+- ✅ **`{ sid: '' }`:** not found in datashell today.
+- ✅ **`init.js`:** gone.
+- ⏳ **`#dev=`:** on main it **crashes**. `dev` is never defined, both lines are commented out ([shim.js:575-581](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/shim.js#L575-L581)). My `dev-setup` branch fixes it (from 275). It's not in the docs yet; only in [doc/state/temp.md:308](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/doc/state/temp.md#L308).
+- ⏳ **Docs** for storage, hooks, override files, path keys: not in `doc/api.md`.
+- ✅ **docs folder:** datashell has `doc/` now.
+
+**Questions for serapath:**
+- **Path keys:** the folder style always wins today. Keep that, or switch to "last one wins" (your 277 rule)?
+- **`admin.on` types:** `'create sdb'` → `'load'`? And should io's `'Connect'` become `{ type: 'connect', data }`?
+- **Who made an override:** is it still needed, now that `address` is gone?
+
+**Affects my work:**
+- **Tests (#39 4️⃣):**
+  - path keys: both styles work; with both, check which wins and that the warning shows
+  - `admin.on`: one event per `sdb`, per io connect, per put (and del, once it exists), all `{ type, data }`
+  - override files: nav's `$ref` loads from nav's folder; case 2 (save the ref id, put it back)
+- **Fixes:** remove the nav.js test lines; io's callback to `{ type, data }`.
+- **`#dev=` (#39 2️⃣):** my `dev-setup` fix + a **contribute** section in the docs (fits my CONTRIBUTING task).
+- **Docs (#39 4️⃣):** storage, hooks, override files, path keys rule.
+- **My own worklogs:** every task in the top comment, every task has an output, `from` / `next` links, the PR in the worklog.
+
+**From the video (7 min):**
+- **0:12 Storage:** the root passes a storage module with the same methods as localdb. "Easy, AI can do it in seconds." Without it, localStorage.
+- **0:58 Override files:** nav gives btn its `btn.css` from nav's folder. The catch: you also pass an `address`, taken from the fallback's args. Without it, "the workaround is really expensive". Demo: a normal btn, then the btn with nav's CSS.
+- **2:42 Path keys:** `theme/style.css` defined both ways. One alone works (`system-ui` font). With both, the object definition is used (`serif`), and a warning shows: "Both JSON and path definitions used for dataset theme in the drive of page".
+- **4:46 Helper subs:** STATE already skips its own helpers (io, localdb, STATE), but it can't know the others. So you give a helper `0` in the fallback.
+- **6:00** Plus debugging for the errors from Discord.
