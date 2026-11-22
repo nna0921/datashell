@@ -1,4 +1,4 @@
-# Ali's worklogs 267–280 → notes
+# Ali's worklogs 267–281 → notes
 
 Plan by Serapath: watch Ali's worklogs 267–283 + their threads, note every task, bug and agreement, mark what's outdated and what's still open.
 
@@ -28,6 +28,7 @@ What it's for: Ali didn't always track what was done, so the "status today" part
 | 279 | 24/7/2025 | STATE v0.0.25: pluggable storage + `admin.on` hooks, overrides use their own files (`$ref` + `address`), path keys (`'theme/style.css'`), helper subs as `0`; serapath: hooks are root / admin only, no `address`, document every feature, list every task in the top comment; PRs #7 and #10 merged | `admin.on` events for every load / io / drive change, a `del` in the drive, docs for all of it, the leftover `drive.put` test in nav.js, `#dev=` broken on main | yes: `admin.on` test, path-key test, docs, CONTRIBUTING (`#dev=`) |
 | 280 | 19/8/2025 | STATE v0.0.26: ~70 lines cleaned up, `address` removed, `sdb.get(sid)` for read-only sub drives, examples 2 / 3 on the new boot, datashell PR #10; serapath: `statedb` throws before `statedb.admin`, trace which fallbacks / overrides ran, a membrane (Proxy) later, document all URL flags, an iframe + `cache.html` fix for CORS | the override trace, the `$ref` @TODO, docs for URL flags (`#dev`), the iframe fetch for `#dev` | yes: an admin-first test, a read-only sub drive test, URL flag docs |
 | thread | 20–25/8/2025 | **A release process for PR #10:** every merged STATE change should also update `drive.json` (a new version + its commit, and move `latest`) | today every version points to `main`, nothing is pinned to a commit; no written release steps | yes: release steps in CONTRIBUTING, a `drive.json` check |
+| 281 | 25/8/2025 | STATE v0.0.27: `statedb.admin` + `on` callbacks, big docs written with AI, override tracking (JSON compare, a Proxy proposal), "strict dataset group names"; serapath: docs must be correct, complete and short (outline first, `<details>`), only track which module's override was used, `drive.json` versions point to a commit, `onbatch` on the next tick | docs: too long, hallucinations, `#dev` missing; no `<details>`; `drive.json` still on `main`; `onbatch` runs right away; Ibrar's shim bug | yes: docs outline + `<details>`, the `onbatch` timing (#39 3️⃣), an override-source test |
 
 ---
 
@@ -1005,3 +1006,67 @@ links: [Discord: serapath's post](https://discord.com/channels/85913456101883906
 - **My datashell PRs (#39):** each one that changes STATE also updates `drive.json`, once the steps are clear.
 - **CONTRIBUTING (#39 2️⃣):** write down the release steps, next to `#dev=` and the URL flags.
 - **A test (#39 4️⃣):** every `drive.json` version points to files that exist (commit or branch), and `stable` / `latest` point to real versions.
+
+---
+
+## 281: STATE v0.0.27, `statedb.admin`, docs written with AI (25/8/2025)
+
+links: [video](https://youtu.be/VTWzylZlGvk) · [GitHub: STATE (datashell #6)](https://github.com/playproject-io/datashell/issues/6#issuecomment-3221469015) · [feedback (datashell #6)](https://github.com/playproject-io/datashell/issues/6#issuecomment-3222058756) · [Discord: worklog post](https://discord.com/channels/859134561018839060/1219764849349755053/1409639699001376958) · [Discord thread 26/8–2/9/2025](https://discord.com/channels/859134561018839060/1409639699001376958)
+
+**What he did** (~8h, outputs: [STATE_v0.0.27](https://github.com/alyhxn/playproject/commit/0ce67e6edaefefc6406ae196f8b864c14ab4b820), [datashell PR](https://github.com/playproject-io/datashell/compare/main...alyhxn:datashell:main?expand=1), merged 26/8):
+- **`statedb.admin` (1h):** the root calls it first, then `statedb`. Callbacks run on every big change: `create sdb`, `put`, an io connect, a delete. It's only attached while the root id is not set yet.
+- **Docs (4h):** he couldn't decide how to write them, so he used AI (Claude 4, many models and prompts, all his info). He says he reviewed it: accurate, with new examples and ideas, but the "concepts" part has many hallucinations.
+- **Debugging (3h).**
+
+**His proposals:**
+- **Override tracking needs a `Proxy`:** his wrapper compares the data before and after an override (JSON). Edge case: if btn's fallback and the override set the **same** `btn.css`, the compare sees no change, so the override's address isn't saved. A Proxy catches that, but is slower.
+- **"Strict dataset group names"** for the quick editor: new dataset names must be defined in the root first, so subs can't add names "with no real purpose". All page content goes in `lang/` (he wrote that in the docs as a recommendation).
+
+**Serapath's feedback (GitHub + Discord, 26/8–1/9):**
+- [**Dataset names, the real rule:**](https://discord.com/channels/859134561018839060/1409639699001376958/1409655272841936946) every component may name its datasets as it likes. But for each dependency, it maps that dependency's names to its own. So the root only maps its direct subs, and everything below is mapped through them. Example:
+  - D has `language/`, E has `translation/`
+  - B has `text/` and maps D `language → text`, E `translation → text`
+  - C has `words/`
+  - A (root) has `lang/` and maps B `text → lang`, C `words → lang`
+  - So what A puts in `lang/` reaches E as `translation/`.
+  - Ali: yes, same idea. graph_explorer's `entries/` should be mapped to `lang/` but isn't.
+- [**`drive.json`: no version should ever point to "latest" (`main`)**](https://discord.com/channels/859134561018839060/1409639699001376958/1409675949708148898), always to a commit hash. Then you can keep pushing without breaking anyone's app. A new version = a new entry in `drive.json`. Later: a prompt when a new version exists, and **data migration** between versions, since real users can't just wipe their localStorage.
+- [**Docs:**](https://discord.com/channels/859134561018839060/1409639699001376958/1409680508123615333) many files have almost 1000 lines. They need to be:
+  - **100% correct, 100% of the API, and as short as possible** ("only AI doesn't care how much you write, humans do")
+  - made from an **outline first**, then AI helps **section by section** (small parts are easy to review and fix)
+  - written from the real STATE.js, the examples, the techniques, his own old docs and **Ahmad's docs**
+  - using **`<details><summary>…</summary>…</details>`**: the key points visible, the extra info folded away
+  - kept **up to date from now on** ("mandatory")
+- [**Later (26/8):** "so many hallucinations"](https://discord.com/channels/859134561018839060/1409639699001376958/1409832144314044427). The `net` part explains protocol callbacks, but not how to use `net`. `#dev` isn't documented. And Ali's shim.js change already causes **a bug for Ibrar**.
+- **Override tracking:** only track **which module's override was used** in the running app, and which other fallbacks / overrides it called. Not which override set which value. A full membrane is slow and comes later, with sandboxing. If an override sets the **same** value, ignore it: it can't cause a bug that isn't there anyway. If Ali still builds the Proxy, make it a standalone internal module.
+- **(28/8, [1/9](https://discord.com/channels/859134561018839060/1409639699001376958/1411867565982224387))** Look at Ahmad's updated docs, and a comment in [Ahmad's worklog 53](https://discord.com/channels/859134561018839060/1325904311221489796/1411787669117079764) ([GitHub](https://github.com/playproject-ui/ui-components/issues/8#issuecomment-3240322503), graph explorer) about STATE **performance**: maybe **caching**, and run **`onbatch` on the next tick**, so all `put`s finish first (the microtask queue).
+- **(1/9)** Six days with no news. STATE is core, so it needs regular progress, or other work for Ali.
+
+**Status today (checked in datashell):**
+- ✅ **`statedb.admin` + callbacks:** see 279 / 280 (admin first, `create sdb`, `put`, io `Connect`, `import`; no `del` yet).
+- ✅ **Which module made an override:** every override is saved with `by: [root_id]` next to its function ([STATE.js:730-734](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L730-L734)). That's what serapath asked for.
+- ✅ **Ali's JSON compare wrapper is in use:** `mutate` compares the data before and after each override, also for its `api` ([STATE.js:717-729](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L717-L729)). No Proxy.
+- ✅ **Dataset names via mapping:** a sub's mapping must point to a root dataset or an already mapped one, otherwise `FAIL.nodataset` ([STATE.js:598-613](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L598-L613)). That's serapath's rule. graph_explorer's `entries/` not checked.
+- ⏳ **Docs:** still long: `doc/api.md` 982 lines, `doc/guide/README.md` 1121. **No `<details>`** anywhere in `doc/`. `#dev` not documented (see 279, 280).
+- ⏳ **`drive.json` on commit hashes:** no, everything is on `main` (see the release thread).
+- ⏳ **`onbatch` on the next tick:** no. `put` calls the listeners right away ([STATE.js:1045-1046](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1045-L1046)), and the old `Promise.resolve().then(notify)` is commented out ([STATE.js:955](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L955)).
+- ❓ **Ibrar's shim bug, Ahmad's docs and performance comment:** not checked.
+
+**Questions for serapath:**
+- **Override tracking:** the `by` list + the JSON compare are there. Is that "good enough", or is the call trace (which fallbacks / overrides ran) still missing?
+- **Docs:** should I start from an outline of the current `doc/` files and cut them down, or start fresh?
+
+**Affects my work:**
+- **#39 3️⃣ (`onbatch`):** run it on the next tick / at the flush, after all `put`s. Same as "onbatch runs when the writes get flushed".
+- **Docs (#39 4️⃣):** outline first, section by section, short, `<details>` for extras, checked against STATE.js. Include Ahmad's docs.
+- **Release steps (#39 2️⃣):** `drive.json` versions point to commit hashes (with the release thread).
+- **A test:** `by` names the right module for an override; an override that sets the same value counts as "not touched".
+- **How I use AI:** small, concrete parts that are easy to review, and I check every line against the code. That's how these notes are made too.
+
+**From the video (8 min):**
+- **0:02** Not many updates; the rest needs discussion. This worklog is for the PR.
+- **0:21 `statedb.admin`:** define the admin in the root first, then call `statedb`. Callbacks run on create sdb, put, io connect, delete. `admin` is only attached when the root id isn't set yet.
+- **1:22 Docs:** he thought about them all day but couldn't decide, so he used AI (Claude 4), tried many models and prompts, and reviewed the result. "Not just accurate", new examples and ideas, but the concepts part has many hallucinations. "Worth a review".
+- **4:01 Override tracking:** a wrapper around the api compares the data before and after (JSON). The edge case: same file in the fallback and the override → no change seen → no address saved. A Proxy would catch it, but is slower. "Let me know which approach."
+- **6:36 Dataset group names:** "missed or misimplemented". Names must be defined in the root first, subs can't add new ones, to avoid "garbage". He needs it for switching and registering datasets in the quick editor.
+- **7:53** The PR is ready, "but have a look at the docs before merging".
