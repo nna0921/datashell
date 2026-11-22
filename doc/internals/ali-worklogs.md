@@ -27,6 +27,7 @@ What it's for: Ali didn't always track what was done, so the "status today" part
 | 278 | 16/7/2025 | quick editor v0.0.6: export / import of the whole localStorage; why no register / switch of datasets (subs can't make their own dataset, because of `mapping`); serapath: version-tag exports, document the admin api, a task list until the revamp, update PR #4 | version tag on export, admin api docs, root-only import / export in a global menu, PR #4 (closed, not merged) | yes: export / import tests, admin api docs, the devkit's global menu |
 | 279 | 24/7/2025 | STATE v0.0.25: pluggable storage + `admin.on` hooks, overrides use their own files (`$ref` + `address`), path keys (`'theme/style.css'`), helper subs as `0`; serapath: hooks are root / admin only, no `address`, document every feature, list every task in the top comment; PRs #7 and #10 merged | `admin.on` events for every load / io / drive change, a `del` in the drive, docs for all of it, the leftover `drive.put` test in nav.js, `#dev=` broken on main | yes: `admin.on` test, path-key test, docs, CONTRIBUTING (`#dev=`) |
 | 280 | 19/8/2025 | STATE v0.0.26: ~70 lines cleaned up, `address` removed, `sdb.get(sid)` for read-only sub drives, examples 2 / 3 on the new boot, datashell PR #10; serapath: `statedb` throws before `statedb.admin`, trace which fallbacks / overrides ran, a membrane (Proxy) later, document all URL flags, an iframe + `cache.html` fix for CORS | the override trace, the `$ref` @TODO, docs for URL flags (`#dev`), the iframe fetch for `#dev` | yes: an admin-first test, a read-only sub drive test, URL flag docs |
+| thread | 20–25/8/2025 | **A release process for PR #10:** every merged STATE change should also update `drive.json` (a new version + its commit, and move `latest`) | today every version points to `main`, nothing is pinned to a commit; no written release steps | yes: release steps in CONTRIBUTING, a `drive.json` check |
 
 ---
 
@@ -972,3 +973,35 @@ links: [video](https://youtu.be/ldrdpECQR7M) · [GitHub: STATE (datashell #6)](h
 - **2:16 `sdb.get`:** nav gets menu's drive by its sid, with `list`, `get`, `has` and a listener. Demo: click menu's title, nav's listener runs. It uses the normal drive functions, just with the sub's id.
 - **4:32 Examples:** example 1 was up to date. Examples 2 and 3 needed many passes to bring in the changes, while keeping what each one shows.
 - **5:17** The feedback that needs discussion moved to the proposals.
+
+---
+
+## Thread: a release process for PR #10 (20–25/8/2025, between 280 and 281)
+
+links: [Discord: serapath's post](https://discord.com/channels/859134561018839060/1219764849349755053/1407773576161132576) · [Discord thread](https://discord.com/channels/859134561018839060/1407773576161132576) · [datashell PR #10](https://github.com/playproject-io/datashell/pull/10)
+
+**What it is:** serapath could merge PR #10, but wants a **release process** first.
+- Each PR that changes STATE should also update **`drive.json`**: a new version with its commit, so others can start using it.
+- The **`latest`** label probably needs to move too.
+- So he waits with the merge until `drive.json` is updated, if more updates come anyway.
+- [**(22/8)** A note to himself](https://discord.com/channels/859134561018839060/1407773576161132576/1408215183280701641): the CORS fix for `#dev=` (the `cache.html` from 280) goes into [shim.js:484-486](https://github.com/playproject-io/datashell/blob/main/shim.js#L484-L486).
+- **(25/8)** He asks for a worklog that explains the latest PR and the other work (→ 281).
+
+**What happened next (from the datashell history):**
+- Ali added "support for external STATE" in the shim (21/8, `90f62d0`) and fixed a bug (26/8, `0790909`). After that, `drive.json` had versions `0`–`3`: `0` and `1` **pinned to a commit** (`c9c8c1a`), `2` and `3` on `main`, with `stable: 1`, `latest: 3`.
+- PR #10 was merged on 25/8.
+- In **12/2025** serapath reset it: "reset datashell versions to 1" (`8f8b24a`).
+
+**Status today (checked in datashell):**
+- ⏳ **No release process:** [drive.json](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/drive.json) has only version `1`, with `stable` and `latest` both `1`, and it points to `refs/heads/main`, not a commit. So every page gets whatever is on `main` right now. No pinned versions.
+- ⏳ **No written release steps:** nothing in the README, `doc/README.md` or `doc/conventions.md`.
+- ⏳ **The `#dev` CORS fix:** still a `@TODO` (see 280).
+
+**Questions for serapath:**
+- **Release steps:** for each merge that changes STATE, is it: add a version pinned to that commit → move `latest` → move `stable` once tested? Who does it, the PR author or you?
+- **Since the reset to `1`:** should versions start being pinned to commits again?
+
+**Affects my work:**
+- **My datashell PRs (#39):** each one that changes STATE also updates `drive.json`, once the steps are clear.
+- **CONTRIBUTING (#39 2️⃣):** write down the release steps, next to `#dev=` and the URL flags.
+- **A test (#39 4️⃣):** every `drive.json` version points to files that exist (commit or branch), and `stable` / `latest` point to real versions.
