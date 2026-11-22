@@ -1,4 +1,4 @@
-# Ali's worklogs 267–279 → notes
+# Ali's worklogs 267–280 → notes
 
 Plan by Serapath: watch Ali's worklogs 267–283 + their threads, note every task, bug and agreement, mark what's outdated and what's still open.
 
@@ -26,6 +26,7 @@ What it's for: Ali didn't always track what was done, so the "status today" part
 | thread | 3/7–18/9/2025 | **STATE bugs & features, part 2:** sub `type`s, re-loading an instance by `sid`, Ahmad's `drive.put` bug, passing data to many subs, files from external repos | relative sub types with instance ids, reuse a `sid` after discard, the `put` bug, external file resolvers (package.json, iframe) | yes: sub `type` test, `sid` reuse test, `put` test, flamingo-wallet |
 | 278 | 16/7/2025 | quick editor v0.0.6: export / import of the whole localStorage; why no register / switch of datasets (subs can't make their own dataset, because of `mapping`); serapath: version-tag exports, document the admin api, a task list until the revamp, update PR #4 | version tag on export, admin api docs, root-only import / export in a global menu, PR #4 (closed, not merged) | yes: export / import tests, admin api docs, the devkit's global menu |
 | 279 | 24/7/2025 | STATE v0.0.25: pluggable storage + `admin.on` hooks, overrides use their own files (`$ref` + `address`), path keys (`'theme/style.css'`), helper subs as `0`; serapath: hooks are root / admin only, no `address`, document every feature, list every task in the top comment; PRs #7 and #10 merged | `admin.on` events for every load / io / drive change, a `del` in the drive, docs for all of it, the leftover `drive.put` test in nav.js, `#dev=` broken on main | yes: `admin.on` test, path-key test, docs, CONTRIBUTING (`#dev=`) |
+| 280 | 19/8/2025 | STATE v0.0.26: ~70 lines cleaned up, `address` removed, `sdb.get(sid)` for read-only sub drives, examples 2 / 3 on the new boot, datashell PR #10; serapath: `statedb` throws before `statedb.admin`, trace which fallbacks / overrides ran, a membrane (Proxy) later, document all URL flags, an iframe + `cache.html` fix for CORS | the override trace, the `$ref` @TODO, docs for URL flags (`#dev`), the iframe fetch for `#dev` | yes: an admin-first test, a read-only sub drive test, URL flag docs |
 
 ---
 
@@ -906,3 +907,68 @@ links: [video](https://youtu.be/SajE0YRPw_s) · [GitHub: STATE (datashell #6)](h
 - **2:42 Path keys:** `theme/style.css` defined both ways. One alone works (`system-ui` font). With both, the object definition is used (`serif`), and a warning shows: "Both JSON and path definitions used for dataset theme in the drive of page".
 - **4:46 Helper subs:** STATE already skips its own helpers (io, localdb, STATE), but it can't know the others. So you give a helper `0` in the fallback.
 - **6:00** Plus debugging for the errors from Discord.
+
+---
+
+## 280: STATE v0.0.26, read-only sub drives, examples on the new boot (19/8/2025)
+
+links: [video](https://youtu.be/ldrdpECQR7M) · [GitHub: STATE (datashell #6)](https://github.com/playproject-io/datashell/issues/6#issuecomment-3204026133) · [feedback (datashell #6)](https://github.com/playproject-io/datashell/issues/6#issuecomment-3206665215) · [Discord: worklog post](https://discord.com/channels/859134561018839060/1219764849349755053/1407578703495696448) · [Discord thread 20–22/8/2025](https://discord.com/channels/859134561018839060/1407578703495696448) · [datashell PR #10](https://github.com/playproject-io/datashell/pull/10)
+
+**What he did** (~10h, outputs: [STATE_v0.0.26](https://github.com/alyhxn/playproject/commits/main/), [datashell_v0.0.1 = PR #10](https://github.com/playproject-io/datashell/pull/10)):
+- **Revamp (3h):** small cleanups. The biggest one is a single `gen_id` that makes a unique id for a new db entry from a seed.
+- **`address` removed (1h):** nav gives btn its `btn.css` with just `{ $ref: 'btn.css' }`. STATE now saves the override's address itself. But it's not efficient: STATE doesn't know **which** file an override changed or added, so it has to try every super's address.
+- **`sdb.get(sid)` (1h30):** gives the **drive of a sub**, read-only: `get`, `list`, `has`, plus `on(listener)` to hear its changes. Demo: nav reads menu's drive and reacts when menu's title changes.
+- **Examples 2 and 3 on the new boot (4h):** went through every file to bring in months of changes, but kept what each example is meant to show.
+
+**His proposals:**
+- Is the whole `const { sdb, io } = statedb(fallback_module, localdb)` line optional?
+- Set the db with `statedb.admin`, not `statedb`.
+- `statedb.admin.on` callbacks for all major actions in STATE.
+- A smart way to know which file an override changed or added.
+
+**Serapath's feedback (Discord, 20–22/8):**
+- **Link the PR as an output** in the worklog.
+- [**Storage + hooks only once, at the root.**](https://discord.com/channels/859134561018839060/1407578703495696448/1407726191032533002) No module or instance can do it. Maybe `const admin_api = statedb.admin(localdb)`, with `localdb` optional, and `admin_api.on` for all major actions.
+  - Ali: then `statedb` must wait for the admin, but for how long, and what if the admin never sets a db?
+  - Serapath: the root **can only call `statedb(...)` after `statedb.admin(...)`**, otherwise `statedb` throws.
+- [**Which file did an override change?**](https://discord.com/channels/859134561018839060/1407578703495696448/1407728680045646026)
+  - Ali: comparing files is expensive (large, any type of data). Saving the address works, but if btn is overridden by many supers, STATE doesn't know which one changed what.
+  - Serapath: without that, it's [**a security nightmare**](https://discord.com/channels/859134561018839060/1407578703495696448/1407865224891076688). Any module in a long dependency chain could override your data, and you'd have to read every fallback in the chain to find out. "If things go wrong, you want to explore where stuff came from."
+  - Ideas: (1) a **membrane** (recursive `Proxy`) that traps every assignment, as a standalone helper module like localdb. (2) fallbacks fill a db object instead of returning JSON (every component would change).
+  - **Fallbacks always run** (for validation), even when an override replaces them. Overrides can be skipped by a super's override.
+  - [**The plan:**](https://discord.com/channels/859134561018839060/1407578703495696448/1407868505000509621) split the validation run from the real run. In the real run, **record which fallbacks and overrides run** and which sub ones they call. Then you know **where to look**, maybe good enough. Keep the membrane in the **backlog** for sandboxing, after STATE is done.
+- **Sub drives:** "hope it's read only though".
+- **Example 1 in Ali's repo had its own STATE.js** copy. Ali: it's his dev version, datashell's is often behind. Serapath: use `playproject-io/datashell` for the latest and `alyhxn/datashell` for dev, or `#dev=`.
+- [**Document all URL flags**](https://discord.com/channels/859134561018839060/1407578703495696448/1407792598990717059) (`#dev`, `version=`, …) and discuss whether we need more.
+- **`#dev=` from another repo fails on GitHub Pages: a CORS error.** [Serapath's fix](https://discord.com/channels/859134561018839060/1407578703495696448/1408214329169543168):
+  - every STATE.js gets a `cache.html` next to it, with `<script>onmessage = e => eval(e.data)</script>`
+  - shim.js loads it in an **iframe** (from the `#dev` url), sends code that fetches the files from the iframe's own origin, and gets them back via `postMessage`
+  - no server headers needed. Serapath already has the code and adds it after Ali's next PR (a note in PR #10). Ali: don't build it.
+
+**Status today (checked in datashell):**
+- ✅ **Admin first:** `statedb.admin` is only set on the first (root) `STATE` call ([STATE.js:53](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L53)), and `statedb(...)` throws "Admin access required! Call statedb.admin() first." if it wasn't called ([STATE.js:59](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L59), [STATE.js:1253](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1253)). `localdb` is optional (`admin(imported_db = localdb)`, see 279).
+- ✅ **Sub drives read-only:** `sdb.get(sid)` returns the drive with `put: undefined`, plus `on` ([STATE.js:967-974](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L967-L974)).
+- ✅ **`gen_id`:** in localdb ([localdb.js:107-115](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/localdb.js#L107-L115)).
+- ✅ **Examples 1–3** use `statedb.admin()`, and none has its own STATE.js copy.
+- 🟠 **Which override changed a file:** `compare(before, after, filepath)` gives a `$ref` the override's `filepath` if the override changed it ([STATE.js:624-637](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L624-L637)). Still the `@TODO` for an override of an override (see 267). ⏳ No trace of which fallbacks / overrides ran, and no split between the validation run and the real run.
+- ⏳ **URL flags docs:** the README explains `version` only. `#dev` isn't documented (and crashes on main, see 279).
+- 🟠 **iframe + postMessage:** shim.js already uses it to load `drive.json` (it runs itself as `onmessage = e => eval(e.data)` inside the iframe, [shim.js:119-125](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/shim.js#L119-L125), [shim.js:228-253](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/shim.js#L228-L253)). ⏳ For `#dev` it's still a `@TODO` ([shim.js:582](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/shim.js#L582)). STATE.js still comes from `playproject-io/datashell` only.
+
+**Questions for serapath:**
+- **The override trace:** is "record which fallbacks / overrides run in the real run" still the plan? Today only `compare()` exists.
+- **The `#dev` iframe fetch:** did your `cache.html` code get pushed? I only see the `drive.json` part and a `@TODO`.
+
+**Affects my work:**
+- **Tests (#39 4️⃣):**
+  - `statedb(...)` before `statedb.admin()` → the clear error
+  - `sdb.get(sid)`: `get` / `list` / `has` work, `put` doesn't, `on` fires when the sub changes
+  - override files: the `$ref` comes from the overriding module's folder (with 279's two cases)
+- **Docs (#39 2️⃣ / 4️⃣):** all URL flags (`version`, `#dev`) in the contribute section, next to my `#dev=` fix.
+- **Later:** the override trace, the membrane helper (backlog, sandboxing).
+
+**From the video (6 min):**
+- **0:01 Revamp:** small tweaks. The `gen_id` function removed the most lines.
+- **0:44 `address` removed:** nav gives btn access to `btn.css` without an address. STATE stores it now, but "not very efficient", because it doesn't know which file the override changed. Hence his proposal.
+- **2:16 `sdb.get`:** nav gets menu's drive by its sid, with `list`, `get`, `has` and a listener. Demo: click menu's title, nav's listener runs. It uses the normal drive functions, just with the sub's id.
+- **4:32 Examples:** example 1 was up to date. Examples 2 and 3 needed many passes to bring in the changes, while keeping what each one shows.
+- **5:17** The feedback that needs discussion moved to the proposals.
