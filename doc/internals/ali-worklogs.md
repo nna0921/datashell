@@ -1,4 +1,4 @@
-# Ali's worklogs 267–281 → notes
+# Ali's worklogs 267–282 → notes
 
 Plan by Serapath: watch Ali's worklogs 267–283 + their threads, note every task, bug and agreement, mark what's outdated and what's still open.
 
@@ -29,6 +29,7 @@ What it's for: Ali didn't always track what was done, so the "status today" part
 | 280 | 19/8/2025 | STATE v0.0.26: ~70 lines cleaned up, `address` removed, `sdb.get(sid)` for read-only sub drives, examples 2 / 3 on the new boot, datashell PR #10; serapath: `statedb` throws before `statedb.admin`, trace which fallbacks / overrides ran, a membrane (Proxy) later, document all URL flags, an iframe + `cache.html` fix for CORS | the override trace, the `$ref` @TODO, docs for URL flags (`#dev`), the iframe fetch for `#dev` | yes: an admin-first test, a read-only sub drive test, URL flag docs |
 | thread | 20–25/8/2025 | **A release process for PR #10:** every merged STATE change should also update `drive.json` (a new version + its commit, and move `latest`) | today every version points to `main`, nothing is pinned to a commit; no written release steps | yes: release steps in CONTRIBUTING, a `drive.json` check |
 | 281 | 25/8/2025 | STATE v0.0.27: `statedb.admin` + `on` callbacks, big docs written with AI, override tracking (JSON compare, a Proxy proposal), "strict dataset group names"; serapath: docs must be correct, complete and short (outline first, `<details>`), only track which module's override was used, `drive.json` versions point to a commit, `onbatch` on the next tick | docs: too long, hallucinations, `#dev` missing; no `<details>`; `drive.json` still on `main`; `onbatch` runs right away; Ibrar's shim bug | yes: docs outline + `<details>`, the `onbatch` timing (#39 3️⃣), an override-source test |
+| 282 | 3/9/2025 | STATE v0.0.28: every dataset defined once in the root (strict mapping), `$ref` changes save the override's address; quick editor v0.0.7: global datasets, named datasets per type (`default`, `rainbow`); serapath: no STATE.js copy in playproject (use `#dev` + localhost), move `doc/state` to datashell, standardx, `.vscode` out, the real mapping rule, everything explicit for now; thread: names (dataset type, named custom dataset, named root dataset, idpath), what the quick editor should do, docs "horrible", `net` docs urgent | `y` only in the root or at every level?, the `$ref` address, standardx, `#dev=` broken on main; the named root dataset, idpaths, editing drive content, errors for missing named data; #30 tasks missing in datashell #6, a docs migration task, `net` / `io` docs | yes: mapping tests, CONTRIBUTING dev setup, lint, the devkit's dataset switcher, docs migration |
 
 ---
 
@@ -1070,3 +1071,114 @@ links: [video](https://youtu.be/VTWzylZlGvk) · [GitHub: STATE (datashell #6)](h
 - **4:01 Override tracking:** a wrapper around the api compares the data before and after (JSON). The edge case: same file in the fallback and the override → no change seen → no address saved. A Proxy would catch it, but is slower. "Let me know which approach."
 - **6:36 Dataset group names:** "missed or misimplemented". Names must be defined in the root first, subs can't add new ones, to avoid "garbage". He needs it for switching and registering datasets in the quick editor.
 - **7:53** The PR is ready, "but have a look at the docs before merging".
+
+## 282: STATE v0.0.28, strict root datasets, quick editor global datasets (3/9/2025)
+
+links: [video](https://youtu.be/xz8NEPAPnXM) · [GitHub: STATE (datashell #6)](https://github.com/playproject-io/datashell/issues/6#issuecomment-3249523557) · [GitHub: quick editor (datashell #5)](https://github.com/playproject-io/datashell/issues/5#issuecomment-3249538035) · [feedback (datashell #6)](https://github.com/playproject-io/datashell/issues/6#issuecomment-3251311513) ("all feedback on discord") · [Discord: worklog post](https://discord.com/channels/859134561018839060/1219764849349755053/1412815182589067407) · [Discord thread 4–16/9/2025](https://discord.com/channels/859134561018839060/1412815182589067407)
+
+**What he did** (~12.5h over 3 days, outputs: [STATE_v0.0.28](https://github.com/alyhxn/playproject/commit/2d3327f71ed1803b03b6f6e1ca5fe3df0e44dff8), [quick_editor_v0.0.7](https://github.com/alyhxn/ui-components/commit/582bc75d9fdaf889644774706e749a5f14cb7592)):
+- **Strict dataset creation (4h):** subs could add a dataset name in their `mapping` that wasn't in their drive (the "leak"). So there were many extra datasets, and nobody used `lang/` for page text.
+  - First fix: a dataset must be in the drive before it's in the mapping. Too much overhead: every module between the root and a deep sub has to define it too.
+  - Final rule: every dataset used in the project is defined **once in the root**. A sub's mapping must point to a root dataset, otherwise: "can't be mapped to any root datasets".
+- **`$ref` tracking (3h):** when an override changes a `$ref`, the overriding module's address is saved next to it (an `address` key), so STATE knows where to fetch the file from.
+- **Quick editor (~5.5h):**
+  - import / export updated
+  - **global datasets (4h):** shows the root datasets. ui-components has many extra datasets (for Ahmad to reuse) that could all be in `lang/`. Datasets should be grouped by the events they change on.
+  - **named datasets per type:** `default`, add another (e.g. `rainbow`) and switch to it, for one or more components. A component without one uses `default`.
+  - importing an export gives new ids (the old ones are taken)
+  - merged Ahmad's changes by hand, so Ahmad can merge to main
+- The STATE commit edits `doc/state/example/node_modules/STATE.js` in playproject, adds `.vscode/settings.json` and deletes `.eslintrc.json`.
+
+**Serapath's feedback (Discord, 4/9):**
+- [**`.vscode`:**](https://discord.com/channels/859134561018839060/1412815182589067407/1412902882629390470) add it to `.gitignore` and delete it from the repo. Ali: he added it many times, it "keeps vanishing".
+- [**No STATE.js copy in playproject:**](https://discord.com/channels/859134561018839060/1412815182589067407/1412902882629390470) the official STATE is in datashell. Develop in your fork (`alyhxn/datashell`). `drive.json` can get a new version without moving `latest`, and the URL param picks it (for dev it may point to latest, not a commit).
+  - Ali: pushing every small change is slow, that's why there is `#dev`. He wants to add the copy to `.gitignore`.
+  - [Serapath: no, that "pollutes" `.gitignore`.](https://discord.com/channels/859134561018839060/1412815182589067407/1412922393785139213) Clone datashell and playproject, run both on different ports, load STATE.js from localhost with `#dev`.
+  - Ali: localhost has CORS issues. Serapath: he'll fix that in his next commit; until then budo has a `--cors` flag.
+- [**Move the docs:**](https://discord.com/channels/859134561018839060/1412815182589067407/1412923469154222082) `doc/state` (and `doc/README.md`) in playproject describe datashell's `lib/node_modules`. Move them to datashell in a PR and update them. Keep what isn't datashell (e.g. graph explorer terms) in playproject.
+- **standardx:** `async function quick_editor(opts)` lost its space before `(`, so an auto formatter ran. Add standardx as a dev dependency with camelCase off (snake_case). Ali: the dependency showed endless syntax errors, he'll reinstall it.
+- [**The real mapping rule**](https://discord.com/channels/859134561018839060/1412815182589067407/1412913638691573821) (about Ali's "this can never happen"):
+  - leaf modules (no dependencies) have their own datasets
+  - every module using one **must** map its datasets to its own. A name can be only in the mapping, not in the drive (a later version may add it).
+  - so the root only maps its direct subs, everything deeper is already mapped
+  - [example A → B → E → G → H:](https://discord.com/channels/859134561018839060/1412815182589067407/1412917785893277736) H's `x` is A's `a` (`a > m > a > p > x`)
+  - `y` exists only in H, so it "bubbles up" to the root (`y: 'y'` at every level). Rare and fine, document it in the root's README.
+- **Everything explicit for now:** Ali lets devs skip the mapping when their drive has a dataset with the same name? Too early for convenience. Stay "as verbose and explicit as possible" until STATE is done (later: compare shallow vs deep override examples).
+- **Ali's to-dos from this:** remove STATE.js from playproject's example (and from `src`? teammates still use it), add standardx, move the useful docs (mostly done), delete the old ones. Should the examples stay in playproject or move?
+- [**Ali's question:**](https://discord.com/channels/859134561018839060/1412815182589067407/1412927882526982175) `y` is mapped by every component but only H uses it. He made carrying it down **optional**, so only the root maps it once. Required or optional?
+
+**The thread, quick editor and naming (4/9):**
+- [**Serapath's list (3:56), what the quick editor shows us:**](https://discord.com/channels/859134561018839060/1412815182589067407/1412934360570662946)
+  1. an app has a long list of addresses for all its modules / instances ☑️
+  2. an app has a list of dataset names at the root, from all the mappings ☑️
+  3. for each dataset name you can pick a custom dataset, e.g. a "rainbow" theme for `style/` ☑️
+  4. the combination of all dataset names, each with its chosen custom dataset, has **no name yet** ❓ → this became the "named root dataset"
+  - Ali: (3.) looks implemented. Serapath: then why does the editor show instance paths, not the dataset content?
+- **Naming:** Ali's structure is `root_dataset > dataset_name > module_dataset > files`. Serapath: "no idea what you just tried to explain". [His words:](https://discord.com/channels/859134561018839060/1412815182589067407/1412937196012310549)
+  - **dataset type:** `style/`, `lang/`, …
+  - **named custom dataset:** e.g. `rainbow.json` for `style/`, `spanish.json` for `lang/`. It maps each modulepath to its files.
+  - **named root dataset** (a "dataset collection"): maps every dataset type of the app to one named custom dataset (e.g. `my_dataset.json`: `style → rainbow`, `lang → spanish`). You load "myapp" with "my_dataset".
+  - Ali: yes, that's it. He'd like shorter names, with these long ones as the definitions.
+- **A missing file in a named dataset:** Ali: fall back to `default`, to avoid errors. [Serapath: **no, it should be empty and throw errors.**](https://discord.com/channels/859134561018839060/1412815182589067407/1412939614418763876)
+- [**What the quick editor should do:**](https://discord.com/channels/859134561018839060/1412815182589067407/1412943393935327384)
+  - left: all dataset types; top: the named custom datasets of the selected type; right: all **idpaths** (modules and instances), click one to see its drive for that type + dataset
+  - show the active named dataset next to each type (`style/: rainbow`, `lang/: spanish`)
+  - save an edited named dataset under a new name; export / import it as a file into the selected type
+  - see, edit, save, export and import the **named root dataset**; its export has all types with their active named datasets
+  - a status bar with the full path when it's too long (Ali: hover shows it)
+- [**What it does today (serapath, with a screenshot):**](https://discord.com/channels/859134561018839060/1412815182589067407/1412944103716556892) only import / export / apply of named datasets. [No named root dataset](https://discord.com/channels/859134561018839060/1412815182589067407/1412968154912522431), no edit + save (only export → rename → import), and the editor shows file ids (`["page.css:1"]`), not the drive content. Ali: the ids were "random", it can show the content.
+- [**idpaths:**](https://discord.com/channels/859134561018839060/1412815182589067407/1412948737541541999) "modulepath" should be renamed to **"idpath"** (or "addresspath"), since it can be a module or an instance. An app with a menubar and 3 buttons has 5 instances + 3 modules = **8 idpaths, each with its own drive**. Ali: showing every idpath "does not make sense", each is "a folder of files" and is already shown. Not settled.
+
+**Later in the thread (10–16/9):**
+- **10/9:** serapath: "any news?"
+- [**13/9:**](https://discord.com/channels/859134561018839060/1412815182589067407/1416416152674111559) Ahmad merged Ali's changes into ui-components. It works on localhost, but online (bundled) graph_explorer can't fetch its remote files. Serapath knows the fix, "just need to get to it".
+- **15/9:** serapath can't find the proposal tasks from [his #30 task list](https://github.com/playproject-io/playproject-io.github.io/issues/30#issuecomment-3023578399) in [datashell #6](https://github.com/playproject-io/datashell/issues/6). "Forgotten?" `net` matters more and more.
+  - [The docs on datashell](https://discord.com/channels/859134561018839060/1412815182589067407/1417155189315604580) are "horrible and verbose and even wrong in many places". Don't move all of `doc/state` at once: a **"docs migration task" with many sub-tasks**, one at a time.
+  - Ahmad uses STATE a lot, maybe he takes it over and asks Ali when things are unclear.
+  - Ali's [`doc/state/net.md`](https://github.com/alyhxn/playproject/blob/main/doc/state/net.md) "seems just plain wrong". The last worklog was 12 days ago.
+- [**16/9:**](https://discord.com/channels/859134561018839060/1412815182589067407/1417291950347915425) docs for `net` and the updated `io` / `net` are "quite urgent", even before everything is implemented. Serapath is fitting io / net to the p2p stack for the task messenger and isn't happy with io / net yet.
+  - Ali: the next worklog lands "by the time you wake up". First he has to finish **external modules** (modules in their own GitHub repo, not `src/node_modules`). Serapath: related to the CORS issue, an important fix.
+
+**Status today (checked in datashell):**
+- ✅ **Root datasets rule:** a mapping value must be a root dataset or an already mapped one, else `FAIL.nodataset` ([STATE.js:598-613](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L598-L613), [L1277-1279](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1277-L1279)). Root datasets are collected in [STATE.js:577](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L577).
+- ✅ **Explicit mapping:** a sub's dataset with no mapping throws `FAIL.nomapping` ([STATE.js:581-583](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L581-L583)). No "same name" shortcut.
+- ❓ **`y` optional:** a sub's mapping may point straight to a root dataset ([STATE.js:603](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L603)), so the modules in between don't need `y: 'y'`. That's Ali's "optional". Serapath's answer: not in this thread.
+- ⏳ **`$ref` address:** not in main. There is no `address` next to `$ref`, only the JSON `compare()` ([STATE.js:624](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L624)) and `by` ([STATE.js:730-734](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L730-L734)). See 280 (`address` removed) and 281.
+- ✅ **`.vscode`:** in datashell's `.gitignore`.
+- ⏳ **standardx:** not in datashell's `package.json` (see 267 / 268).
+- ✅ **Local dev with CORS:** `npm start` (port 9966) and `npm run shim` (port 9999) use `http-server --cors` (`package.json` L9-10). But `#dev=` still crashes on main (see 279).
+- ⏳ **Docs moved:** datashell has `doc/state/` (8 files) and `doc/README.md`, but they're long and partly old (see 281). Not checked if playproject still has its copy.
+- ❓ **Quick editor global / named datasets:** in ui-components, not checked.
+- ⏳ **Missing data in a named dataset:** `swap` keeps the old dataset when a node has no dataset with that name, no error ([STATE.js:892-924](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L892-L924)). Serapath wanted "empty and throw errors".
+- ⏳ **Named root dataset:** not in STATE.js. `swap` switches one type at a time.
+- ⏳ **#30 tasks in datashell #6:** the top comment still misses some: "admin pluggable storage & hooks" (done in 279), "overridden nodes use the files of the override", path keys + the conflict warning (done in 279), "non-state subs not required in the fallback", "drive.json named `shim.json`". There are no `io` / `net` tasks at all.
+- ⏳ **`net.md`:** datashell's [`doc/state/net.md`](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/doc/state/net.md) is the same 17 lines as Ali's "plain wrong" one. `doc/net.md` (184 lines) is a different file, not checked.
+- ⏳ **Docs migration task:** none in datashell #6.
+
+**Questions for serapath:**
+- **`y`:** should it be mapped at every level (`y: 'y'`), or is "only the root" fine? Main does "only the root".
+- **`$ref` address:** is it still wanted, now that `address` was removed (280)?
+- **Names:** do we use "dataset type", "named custom dataset", "named root dataset" and "idpath" in STATE.js and the docs too?
+- **idpaths:** should the editor list every instance, or only modules?
+
+**Affects my work:**
+- **Tests (#39):** a mapping to a non-root dataset throws `nodataset`; a missing mapping throws `nomapping`; a deep sub mapped straight to a root dataset (`y`) works.
+- **CONTRIBUTING (#39 2️⃣):** the dev setup: datashell + the app on two ports, `--cors`, STATE.js loaded with `#dev`; no STATE.js copies in other repos.
+- **Lint:** standardx with camelCase off (already a task).
+- **Devkit (#39):** its dataset switcher = serapath's editor layout: dataset types, named datasets, idpaths, the drive content (not file ids), save as new name, the named root dataset.
+- **Tests:** a switch to a named dataset that a node doesn't have throws (serapath's rule; today it doesn't).
+- **Docs (#39 4️⃣):** a docs migration task with sub-tasks, `net` / `io` first; replace the wrong `doc/state/net.md`.
+
+**From the video (10 min):**
+- **0:07 Strict datasets:** many extra datasets, nobody used `lang/` for text. One `lang/` means one event when the language changes.
+- **0:53 The leak:** a dataset not in the drive could still be added in the mapping.
+- **2:03 First fix, overhead:** every module between the root and a deep sub would have to define it.
+- **2:53 Final rule:** every dataset in the project is defined once in the root. `lang/` and `io/` aren't mapped down, but deep subs still have them.
+- **3:54** Removing `lang/` and `io/` from the root gives the error: "can't be mapped to any root datasets".
+- **4:48 `$ref` tracking:** when a `$ref` changes, the override's module address is put beside the `$ref` key, so you know "where to look for this file".
+- **5:57 Quick editor:** import / export updated.
+- **6:13 Global datasets:** all root datasets. ui-components' extra datasets could all be in `lang/`, with local listeners for each part. Group datasets by the events they change on, not "random groups". For now they're all root datasets "to avoid getting the error".
+- **7:44 Named datasets:** `default`, add others and switch to them.
+- **8:17** A new `rainbow` theme for one or more components; a component without it uses `default`.
+- **8:42** Export after changing `style/`, import it: it's a copy of `default` with new ids, because the old ids are taken.
+- **9:45** He merged Ahmad's changes by hand, so Ahmad can merge to the main repo.
