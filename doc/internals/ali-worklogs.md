@@ -33,6 +33,7 @@ What it's for: Ali didn't always track what was done, so the "status today" part
 | thread | 15/9/2025 | **Update `io` and `net`:** a new planning round, docs first; a 5-file example (page → header → menubutton, page → footer → statusbar, each by another dev): a click in menubutton updates statusbar **without bubbling**, by mapping message types like datasets | `net` does nothing in STATE.js yet, `io.md` / `net.md` are Ali's old files, no example; Ahmad's separate `net.js` (3/2026) is still parent ↔ child | yes: io / net docs first, the 5-file example as a test |
 | 283 | 16/9/2025 | quick editor v0.0.8: root datasets (the db prefix `state` = the default root dataset), 6 tab levels, import / export of root datasets (apply missing); strict rule kept local; serapath: use Ahmad's graph explorer, 5 levels not 6, actions in a task bar, quick editor + theme widget = "devtools", Ahmad's lint config, docs in phases; Ali goes quiet after 22/9 | apply / switch a root dataset, lint config, components from their own repos, docs migration | yes: the devkit (5 levels, actions, graph explorer), lint config, root dataset tests |
 | thread | 21/9–5/12/2025 | **Datashell api for quick editor + theme widget:** use Ahmad's graph explorer in the quick editor (3 repos), expose `statedb.admin` via messages, read access for the graph explorer (Ahmad's graphdb); all apps reach p2p through datashell; Ali "not available" (25/10) | no graph / message admin api in datashell, quick editor in ui-components not checked, no owner | yes: the devkit's data source, p2p-news-app through datashell, 2️⃣ owners |
+| thread | 15/11/2025–31/3/2026 | **STATE module:** serapath consolidates many diverging STATE.js copies into one (6 of 9 pages work by 4/12); the `subi,d` typo; open issues kept in his own list, one big update later (docs + `net` + p2p) | `subi,d` in main, examples 2 / 3 + playproject not checked, his list not public | yes: the typo fix, run all pages as tests, match his list in 2️⃣ |
 
 ---
 
@@ -1329,3 +1330,32 @@ links: [Discord thread](https://discord.com/channels/859134561018839060/14190756
 - **Devkit (#39):** this thread is its background: the graph explorer for the tree, `statedb.admin` as the data source, read first.
 - **p2p-news-app:** must reach identity / network / data **through datashell**, not around it.
 - **2️⃣:** "Ali is not available" (25/10), so Ali's open work needs a new owner.
+
+---
+
+## Thread: STATE module (15/11/2025–31/3/2026, after 283)
+
+links: [Discord thread](https://discord.com/channels/859134561018839060/1439180483354165290)
+
+**What it is:** serapath's own thread to clean up STATE, since Ali is "not around".
+- [**(15/11) Many STATE.js copies:**](https://discord.com/channels/859134561018839060/1439180483354165290/1439180486663602321) one in datashell (used by people, ~3 months old) and three in playproject (`src/node_modules/`, `doc/state/example/node_modules/`, `doc/state/example2/node_modules/`). `example2` is 8 commits behind `example`. `src` is 8 behind and 2 ahead, so they diverge. Datashell's copy differs from all of them, and nobody knows which version it came from.
+- **9 pages use STATE:** playproject, its examples 1–3, datashell, ui-components, flamingo-wallet, graph-explorer, and a test component repo. **Only `example` and graph-explorer worked** without errors, and graph-explorer used a 4-month-old STATE. "What a mess."
+- [**(4/12) Consolidated:**](https://discord.com/channels/859134561018839060/1439180483354165290/1445914170338967644) one latest STATE file. Working: datashell, its example1, ui-components, flamingo-wallet, graph-explorer, the test repo (6 of 9). Still broken: playproject, datashell examples 2 and 3 (fallbacks written for an old version). PRs to ui-components and graph-explorer will follow.
+- **(30/3/2026) A bug found by Basim:** `subi,d` in the `nodataset` error should be `subid` ([STATE.js:1278-1279](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1278-L1279)). Ahmad had already reported it at the end of 2025.
+  - Serapath (31/3): fixed in his local copy, not pushed. It only shows up when STATE already throws an error.
+- [**(30/3/2026) The plan:**](https://discord.com/channels/859134561018839060/1439180483354165290/1488242805536198817) STATE has "quite a few open issues". Serapath keeps a list and updates **everything in one go**, after Lupay's p2p progress, because the update also brings **docs and `net`**. One round of refactoring for all modules, not many.
+
+**Status today (checked in datashell):**
+- ✅ **One STATE.js:** serapath's commits: "upgrade STATE" (`8f8667e`, 23/11), "remove outdated STATE module versions" (`8af1459`, 1/12), sandbox + lint (`25a4e69`, 8/12), an infinite loop fix (`c7c1efd`, 9/12), "reset datashell versions to 1 + fix shim" (`8f8b24a`, 10/12), "refactor examples & STATE" (`aedc7ac`, 12/12, also examples 2 and 3), "refactor & cleanup STATE more" (`33ca53b`, 14/12). Main is `7976541` (Ahmad, 30/3/2026).
+- ⏳ **`subi,d`** is still in main ([STATE.js:1279](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1279)).
+- ❓ **Examples 2 and 3 and playproject working:** refactored in `aedc7ac`, not run yet.
+- ⏳ **Serapath's list of open STATE issues:** not public.
+
+**Questions for serapath:**
+- **Your list of open STATE issues:** can it go into datashell #6 (or a new issue), so the ⏳ items from these notes can be matched against it?
+- **The "one go" update** (docs + `net` + p2p): is #39 part of it, or does it wait for it?
+
+**Affects my work:**
+- **#39 fixes:** the `subi,d` typo is a one-line fix; ask before a PR, since serapath has it locally.
+- **Tests (#39):** run all 9 pages (or the ones in datashell) to see which still break; a test that each `FAIL` message renders without errors.
+- **2️⃣:** compare serapath's list with the ⏳ items from 267–283, so nothing is done twice.
