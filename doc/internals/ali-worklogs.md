@@ -32,6 +32,7 @@ What it's for: Ali didn't always track what was done, so the "status today" part
 | 282 | 3/9/2025 | STATE v0.0.28: every dataset defined once in the root (strict mapping), `$ref` changes save the override's address; quick editor v0.0.7: global datasets, named datasets per type (`default`, `rainbow`); serapath: no STATE.js copy in playproject (use `#dev` + localhost), move `doc/state` to datashell, standardx, `.vscode` out, the real mapping rule, everything explicit for now; thread: names (dataset type, named custom dataset, named root dataset, idpath), what the quick editor should do, docs "horrible", `net` docs urgent | `y` only in the root or at every level?, the `$ref` address, standardx, `#dev=` broken on main; the named root dataset, idpaths, editing drive content, errors for missing named data; #30 tasks missing in datashell #6, a docs migration task, `net` / `io` docs | yes: mapping tests, CONTRIBUTING dev setup, lint, the devkit's dataset switcher, docs migration |
 | thread | 15/9/2025 | **Update `io` and `net`:** a new planning round, docs first; a 5-file example (page → header → menubutton, page → footer → statusbar, each by another dev): a click in menubutton updates statusbar **without bubbling**, by mapping message types like datasets | `net` does nothing in STATE.js yet, `io.md` / `net.md` are Ali's old files, no example; Ahmad's separate `net.js` (3/2026) is still parent ↔ child | yes: io / net docs first, the 5-file example as a test |
 | 283 | 16/9/2025 | quick editor v0.0.8: root datasets (the db prefix `state` = the default root dataset), 6 tab levels, import / export of root datasets (apply missing); strict rule kept local; serapath: use Ahmad's graph explorer, 5 levels not 6, actions in a task bar, quick editor + theme widget = "devtools", Ahmad's lint config, docs in phases; Ali goes quiet after 22/9 | apply / switch a root dataset, lint config, components from their own repos, docs migration | yes: the devkit (5 levels, actions, graph explorer), lint config, root dataset tests |
+| thread | 21/9–5/12/2025 | **Datashell api for quick editor + theme widget:** use Ahmad's graph explorer in the quick editor (3 repos), expose `statedb.admin` via messages, read access for the graph explorer (Ahmad's graphdb); all apps reach p2p through datashell; Ali "not available" (25/10) | no graph / message admin api in datashell, quick editor in ui-components not checked, no owner | yes: the devkit's data source, p2p-news-app through datashell, 2️⃣ owners |
 
 ---
 
@@ -1293,3 +1294,38 @@ links: [video](https://youtu.be/DUQXmA3FPD8) · [GitHub: quick editor (datashell
 - **5:57** The strict mapping rule is in his local STATE copy, not in main, because it would cause many errors for everyone. "Let me know when."
 - **6:49** Lint: standardx turned off, the whole file was red and he couldn't tell real errors from format errors.
 - **7:49** playproject now uses the local STATE hosted from datashell, not its own copy.
+
+---
+
+## Thread: datashell api integration into quick editor + theme widget (21/9–5/12/2025, after 283)
+
+links: [Discord thread](https://discord.com/channels/859134561018839060/1419075656079249449) · [Ahmad's worklog 62: graphdb (video)](https://www.youtube.com/watch?v=r2-E0dAFI3o&t=319s)
+
+**What it is:** a joint task for Ahmad and Ali: use Ahmad's **graph explorer** inside the quick editor.
+- **Three repos:** quick editor and graph explorer each in their own GitHub repo, both used in **ui-components**.
+- **The admin api via messages:** find the balance for a nice developer experience when `statedb.admin` is exposed through message sending, to power the graph explorer in the theme widget and the quick editor.
+- **(21/9)** Serapath waits for Ali's proposal for the STATE changes that "apply" needs (see 283).
+- [**(25/9) The bigger picture**](https://discord.com/channels/859134561018839060/1419075656079249449/1420546238914498643) (to Lupay): all apps and components use identity, the p2p network and p2p data structures **through datashell** (the "state management library", "more like a p2p data runtime engine", name not settled). This thread slowly brings together the frontend work, the datashell work and the p2p work. p2p-news-app has to integrate with it too.
+- [**(1/10)**](https://discord.com/channels/859134561018839060/1419075656079249449/1422704656530018385) Ali should watch Ahmad's graphdb video: `statedb.admin` should expose an api with **read access** (maybe write later) to the internal structure of all instances, so the graph explorer can show it. What data is there, and how should the api look from STATE's side?
+- **(25/10)** Serapath: `statedb.admin` is how the graphdb gets into datashell, but how that db looks is up to Ahmad. "**Ali is sadly not available** and it's unclear if that will change."
+  - Ahmad: is Ali or Lupay working on it? Lupay: not sure what Ahmad or Ali work on; serapath is the only one who knows where to start.
+- **(4/12)** Serapath: is the quick editor in ui-components done, based on this thread? Ahmad (5/12): he wasn't involved, Ali made the PR to ui-components himself; details are in Ali's worklogs.
+
+**Ahmad's graphdb (worklog 62, 30/9/2025, from 5:19):** a new file in graph explorer, a basic db over the `entries` object:
+- now: get an entry, `has`, all keys, is empty, the root entry, all entries (what graph explorer uses)
+- planned: `put` (update an entry, e.g. change its parent / subs, also enough to link two entries), delete an entry (a whole tree)
+- a first step, so the api can change without touching the graph explorer
+
+**Status today (checked in datashell):**
+- ⏳ **An admin api for the graph explorer:** nothing in STATE.js mentions a graph. The admin api has `xget(id)` and `get_all()` (raw db entries) and `status` ([STATE.js:867-880](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L867-L880)), but no message-based access and nothing shaped like graphdb.
+- ⏳ **Docs:** [`doc/data-structures.md`](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/doc/data-structures.md) has a short "Graph Explorer" part (entities, relations hub / sub / input / output, slots), nothing about the admin api.
+- ❓ **Quick editor in ui-components, graph explorer repo:** not checked.
+
+**Questions for serapath:**
+- **Is this the devkit task?** The devkit (sys_ui) in #39 reads site state via `sdb.admin`. Does it replace "quick editor + theme widget", and does it use Ahmad's graphdb?
+- **The admin api:** read-only first, through messages (`io`), or direct calls?
+
+**Affects my work:**
+- **Devkit (#39):** this thread is its background: the graph explorer for the tree, `statedb.admin` as the data source, read first.
+- **p2p-news-app:** must reach identity / network / data **through datashell**, not around it.
+- **2️⃣:** "Ali is not available" (25/10), so Ali's open work needs a new owner.
