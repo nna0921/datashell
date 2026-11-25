@@ -1,4 +1,4 @@
-# Ali's worklogs 267–282 → notes
+# Ali's worklogs 267–283 → notes
 
 Plan by Serapath: watch Ali's worklogs 267–283 + their threads, note every task, bug and agreement, mark what's outdated and what's still open.
 
@@ -31,6 +31,7 @@ What it's for: Ali didn't always track what was done, so the "status today" part
 | 281 | 25/8/2025 | STATE v0.0.27: `statedb.admin` + `on` callbacks, big docs written with AI, override tracking (JSON compare, a Proxy proposal), "strict dataset group names"; serapath: docs must be correct, complete and short (outline first, `<details>`), only track which module's override was used, `drive.json` versions point to a commit, `onbatch` on the next tick | docs: too long, hallucinations, `#dev` missing; no `<details>`; `drive.json` still on `main`; `onbatch` runs right away; Ibrar's shim bug | yes: docs outline + `<details>`, the `onbatch` timing (#39 3️⃣), an override-source test |
 | 282 | 3/9/2025 | STATE v0.0.28: every dataset defined once in the root (strict mapping), `$ref` changes save the override's address; quick editor v0.0.7: global datasets, named datasets per type (`default`, `rainbow`); serapath: no STATE.js copy in playproject (use `#dev` + localhost), move `doc/state` to datashell, standardx, `.vscode` out, the real mapping rule, everything explicit for now; thread: names (dataset type, named custom dataset, named root dataset, idpath), what the quick editor should do, docs "horrible", `net` docs urgent | `y` only in the root or at every level?, the `$ref` address, standardx, `#dev=` broken on main; the named root dataset, idpaths, editing drive content, errors for missing named data; #30 tasks missing in datashell #6, a docs migration task, `net` / `io` docs | yes: mapping tests, CONTRIBUTING dev setup, lint, the devkit's dataset switcher, docs migration |
 | thread | 15/9/2025 | **Update `io` and `net`:** a new planning round, docs first; a 5-file example (page → header → menubutton, page → footer → statusbar, each by another dev): a click in menubutton updates statusbar **without bubbling**, by mapping message types like datasets | `net` does nothing in STATE.js yet, `io.md` / `net.md` are Ali's old files, no example; Ahmad's separate `net.js` (3/2026) is still parent ↔ child | yes: io / net docs first, the 5-file example as a test |
+| 283 | 16/9/2025 | quick editor v0.0.8: root datasets (the db prefix `state` = the default root dataset), 6 tab levels, import / export of root datasets (apply missing); strict rule kept local; serapath: use Ahmad's graph explorer, 5 levels not 6, actions in a task bar, quick editor + theme widget = "devtools", Ahmad's lint config, docs in phases; Ali goes quiet after 22/9 | apply / switch a root dataset, lint config, components from their own repos, docs migration | yes: the devkit (5 levels, actions, graph explorer), lint config, root dataset tests |
 
 ---
 
@@ -1224,3 +1225,71 @@ links: [Discord: serapath's post](https://discord.com/channels/85913456101883906
 - **Docs (#39 4️⃣):** `io` / `net` first in the docs migration (with 282), and replace the wrong `doc/state/net.md`.
 - **Tests (#39):** the 5-file example as a test: a click in `menubutton` updates `statusbar` with no bubbling, and the connection comes back after a reload.
 - **My net.js message shape (see 273):** keep it close to whatever message type mapping is decided here.
+
+---
+
+## 283: quick editor v0.0.8, root datasets (16/9/2025)
+
+links: [video](https://youtu.be/DUQXmA3FPD8) · [GitHub: quick editor (datashell #5)](https://github.com/playproject-io/datashell/issues/5#issuecomment-3297997738) · [feedback (datashell #5)](https://github.com/playproject-io/datashell/issues/5#issuecomment-3315292204) ("all on discord") · [Discord thread 16/9–11/10/2025](https://discord.com/channels/859134561018839060/1417482562921562152)
+
+**What he did** (~9h, output: [quick_editor_v0.0.8](https://github.com/alyhxn/ui-components/commit/c9c446a2b48749b41ae754cdbb07fb72f43ad46a)):
+- **Root datasets (2h):** the named root dataset from 282. In STATE, the db prefix `state` (used for every read / write) becomes the default root dataset. Another root dataset = another prefix.
+- **Nested tabs (4h):** the editor now has 6 levels: **roots → types → names → nodes → files → entries**. Roots and names have radio buttons (one active at a time). One recursive function builds all tab levels, instead of one loop per level.
+- **Import / export for root datasets (3h):** export a root dataset (one file with everything in it), rename the file, import it → a copy under a new name. Ali could add a "copy" button.
+- **Open (his next task):** **apply** a root dataset. It doesn't work yet, because the `state` prefix is a constant in STATE; it has to become a variable for the active root dataset. He wants to discuss that first.
+- **The strict mapping rule (282)** is only in his local STATE copy, not uploaded: it would break many projects. He asks when to upload it.
+- **Lint:** standardx turned off, it made the whole file red with rules they don't follow.
+- playproject now loads STATE from datashell (local), not its own copy (as serapath asked in 282).
+
+**Serapath's feedback (Discord, 17/9–11/10):**
+- [**(17/9)**](https://discord.com/channels/859134561018839060/1417482562921562152/1417933139325620345) Ali: a **file explorer** would be better UX than all the tabs. Serapath: yes, use **Ahmad's graph explorer** (file explorer only mode). The theme widget will use it to show the `statedb.admin()` api too, and the task explorer for rooms later. Merge Ali's extra features into it.
+- [**(21/9) Next steps:**](https://discord.com/channels/859134561018839060/1417482562921562152/1419061891850047568) is the quick editor ready for its own repository, so is datashell ready to load components from their own GitHub repos? Then move to the graph explorer. A good chance to fine-tune the **admin api**.
+- [**(21/9) The 6 levels are confusing**](https://discord.com/channels/859134561018839060/1417482562921562152/1419072199419101195), the UI has to change. What he expected:
+  1. root dataset names
+  2. types (all types at the root, after all mappings)
+  3. the named custom datasets of each type, the active one marked
+  4. all node paths (modules / instances) in the component being edited, the selected one marked
+  5. the files / folders of the selected node for the selected type
+  - "what are the **entries**?" (`raw`, `id`, `name`, `type`, `hubs`)
+  - Ali (22/9): entries are info about the file, only `raw` is useful.
+- **(21/9) Ali's editor for a sub-component** has no roots and types levels, no way to pick a named dataset for nodes / files, and no entries.
+  - Ali: the page's quick editor has extra control, that's why the root is missing in the others.
+  - Serapath: entries (`hubs` / `subs`) could be shown as parent / child links in Ahmad's graph explorer.
+- [**(21/9) Devtools:**](https://discord.com/channels/859134561018839060/1417482562921562152/1419082266323452106) apply / import / export / copy become **actions** in the task bar from the theme widget. The quick editor may merge with the theme widget into **"devtools"**. The difference: the theme widget is for the whole page, a quick editor can be for only some components.
+- **(21/9) Cypher:** this worklog matters for Cypher's ui-components gallery (Behance style), with demo-maker. The quick editor is "amazing in terms of features", but its UI / UX is "crap", lots of work to do.
+- **(21/9) The strict rule:** merge it once the **CORS issue** is solved, so people can share live examples of their errors when they migrate.
+- **(21/9) Lint:** Ahmad's config in `package.json`: `eslintConfig` with `env: { browser: true, es2025: true }`, `camelcase: 0`, `indent: 2`, `ignorePatterns` (`lib/STATE.js`, `bundle.js`, `node_modules/`). Ali (22/9): added.
+- **(21/9) Docs:** what's next, and when can the docs migration happen? Phases, task by task, worklog by worklog. Ali (22/9): docs updated, in the next worklog.
+- **(22/9)** Serapath: did it fix the lint issues? And please answer the questions in his feedback.
+- **(29/9, 11/10)** "any news?", then "3 weeks since your last sign of life". No reply in the thread.
+
+**Status today (checked in datashell):**
+- ✅ **The strict mapping rule** (282) is in datashell now. It came with serapath's "upgrade STATE" (`8f8667e`, 23/11/2025), not from Ali. Ali's last datashell commit is 26/8/2025.
+- ⏳ **Root datasets in STATE:** there is a `root_datasets` list with `state` as the default ([STATE.js:176](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L176)), and the admin can `import_root` / `export_root` ([STATE.js:1167-1170](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1167-L1170), [L1195](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1195)). But every read still uses the fixed `'state'` prefix (e.g. [STATE.js:230](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L230)), so **apply / switch a root dataset doesn't exist**.
+- ⏳ **Lint config:** no `eslintConfig` and no standardx in datashell's `package.json`.
+- ⏳ **Components from their own GitHub repos:** nothing in STATE.js reads `package.json` (see the part 2 thread, item 6).
+- ⏳ **Docs migration:** no task, docs not updated (see 282).
+- ❓ **Quick editor in its own repo / graph explorer / devtools:** in ui-components and other repos, not checked.
+
+**Questions for serapath:**
+- **Root datasets:** should "apply" switch the db prefix (Ali's idea), or is there another plan since the 23/11 upgrade?
+- **Ali's quick editor:** who continues it, or is the devkit (#39) its follow-up?
+- **Lint:** use Ahmad's `eslintConfig` for datashell too?
+
+**Affects my work:**
+- **Devkit (#39):** this is the closest thing to it. Use serapath's 5 levels (root dataset → type → named dataset → node → files), not Ali's 6. Actions in a task bar, the graph explorer for the tree, `raw` content instead of entries.
+- **Tests:** export a root dataset → import under a new name → apply it (once apply exists).
+- **Lint (#39):** Ahmad's `eslintConfig` as the starting point.
+- **283 is the last worklog:** the thread ends with no answer from Ali after 22/9. So every ⏳ in these notes is open work (→ 2️⃣).
+
+**From the video (8 min):**
+- **0:00** Root datasets working. The quick editor's structure changed for more nested tabs: roots, types, names, nodes, files, entries.
+- **0:20** Roots and names have radio buttons, one active at a time.
+- **0:58** Import and export work, **apply doesn't**: it needs changes in STATE to discuss.
+- **1:17** Export a root dataset, rename the file ("rainbow"), import it: a copy. People could also edit the file in between.
+- **3:03** He could add a copy button.
+- **3:26** Backend: one recursive function for all tab levels, instead of one loop each.
+- **4:04** In STATE, every db read / write has a prefix. That prefix becomes the root dataset: `state` is the default. It has to change from a constant to a variable for the active root dataset.
+- **5:57** The strict mapping rule is in his local STATE copy, not in main, because it would cause many errors for everyone. "Let me know when."
+- **6:49** Lint: standardx turned off, the whole file was red and he couldn't tell real errors from format errors.
+- **7:49** playproject now uses the local STATE hosted from datashell, not its own copy.
