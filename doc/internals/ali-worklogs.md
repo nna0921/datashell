@@ -30,6 +30,7 @@ What it's for: Ali didn't always track what was done, so the "status today" part
 | thread | 20–25/8/2025 | **A release process for PR #10:** every merged STATE change should also update `drive.json` (a new version + its commit, and move `latest`) | today every version points to `main`, nothing is pinned to a commit; no written release steps | yes: release steps in CONTRIBUTING, a `drive.json` check |
 | 281 | 25/8/2025 | STATE v0.0.27: `statedb.admin` + `on` callbacks, big docs written with AI, override tracking (JSON compare, a Proxy proposal), "strict dataset group names"; serapath: docs must be correct, complete and short (outline first, `<details>`), only track which module's override was used, `drive.json` versions point to a commit, `onbatch` on the next tick | docs: too long, hallucinations, `#dev` missing; no `<details>`; `drive.json` still on `main`; `onbatch` runs right away; Ibrar's shim bug | yes: docs outline + `<details>`, the `onbatch` timing (#39 3️⃣), an override-source test |
 | 282 | 3/9/2025 | STATE v0.0.28: every dataset defined once in the root (strict mapping), `$ref` changes save the override's address; quick editor v0.0.7: global datasets, named datasets per type (`default`, `rainbow`); serapath: no STATE.js copy in playproject (use `#dev` + localhost), move `doc/state` to datashell, standardx, `.vscode` out, the real mapping rule, everything explicit for now; thread: names (dataset type, named custom dataset, named root dataset, idpath), what the quick editor should do, docs "horrible", `net` docs urgent | `y` only in the root or at every level?, the `$ref` address, standardx, `#dev=` broken on main; the named root dataset, idpaths, editing drive content, errors for missing named data; #30 tasks missing in datashell #6, a docs migration task, `net` / `io` docs | yes: mapping tests, CONTRIBUTING dev setup, lint, the devkit's dataset switcher, docs migration |
+| thread | 15/9/2025 | **Update `io` and `net`:** a new planning round, docs first; a 5-file example (page → header → menubutton, page → footer → statusbar, each by another dev): a click in menubutton updates statusbar **without bubbling**, by mapping message types like datasets | `net` does nothing in STATE.js yet, `io.md` / `net.md` are Ali's old files, no example; Ahmad's separate `net.js` (3/2026) is still parent ↔ child | yes: io / net docs first, the 5-file example as a test |
 
 ---
 
@@ -1072,6 +1073,8 @@ links: [video](https://youtu.be/VTWzylZlGvk) · [GitHub: STATE (datashell #6)](h
 - **6:36 Dataset group names:** "missed or misimplemented". Names must be defined in the root first, subs can't add new ones, to avoid "garbage". He needs it for switching and registering datasets in the quick editor.
 - **7:53** The PR is ready, "but have a look at the docs before merging".
 
+---
+
 ## 282: STATE v0.0.28, strict root datasets, quick editor global datasets (3/9/2025)
 
 links: [video](https://youtu.be/xz8NEPAPnXM) · [GitHub: STATE (datashell #6)](https://github.com/playproject-io/datashell/issues/6#issuecomment-3249523557) · [GitHub: quick editor (datashell #5)](https://github.com/playproject-io/datashell/issues/5#issuecomment-3249538035) · [feedback (datashell #6)](https://github.com/playproject-io/datashell/issues/6#issuecomment-3251311513) ("all feedback on discord") · [Discord: worklog post](https://discord.com/channels/859134561018839060/1219764849349755053/1412815182589067407) · [Discord thread 4–16/9/2025](https://discord.com/channels/859134561018839060/1412815182589067407)
@@ -1182,3 +1185,42 @@ links: [video](https://youtu.be/xz8NEPAPnXM) · [GitHub: STATE (datashell #6)](h
 - **8:17** A new `rainbow` theme for one or more components; a component without it uses `default`.
 - **8:42** Export after changing `style/`, import it: it's a copy of `default` with new ids, because the old ids are taken.
 - **9:45** He merged Ahmad's changes by hand, so Ahmad can merge to the main repo.
+
+---
+
+## Thread: update `io` and `net` (15/9/2025, between 282 and 283)
+
+links: [Discord: serapath's post](https://discord.com/channels/859134561018839060/1219764849349755053/1417164013397217421) · [Discord thread](https://discord.com/channels/859134561018839060/1417164013397217421) · [Ali's io.md](https://github.com/alyhxn/playproject/blob/main/doc/state/io.md) · [Ali's net.md](https://github.com/alyhxn/playproject/blob/main/doc/state/net.md) · [serapath's io feedback from 19/5 (#33)](https://github.com/playproject-io/playproject-io.github.io/issues/33#issuecomment-2892264954)
+
+**What it is:** a new planning round for `io` and the `net` fallback property. Datashell has no `io` / `net` docs, the `net` docs are lacking, and there are no examples.
+- [**Order:**](https://discord.com/channels/859134561018839060/1417164013397217421/1417166125677940967) docs first, then examples that show the features, then implement.
+- [Serapath starts from his feedback of 19/5 (#33):](https://discord.com/channels/859134561018839060/1417164013397217421/1417166125677940967)
+  - `net` should only say **who connects to whom**, not which events are sent (in Ali's proposal, page told the button to send `register` with `rainbow_theme`).
+  - a button doesn't know about themes; the fallback runs only once, so it can't change what's sent at runtime; no new `io.at` connection on every click
+  - maybe a port first says which api calls / events it wants, and **subscribe / connect events are saved in the db**, so connections come back after a reload
+- [Ali:](https://discord.com/channels/859134561018839060/1417164013397217421/1417164581523951850) he'll start after the quick editor and the external module fetching, "hopefully this week".
+
+[**The example (5 files):**](https://discord.com/channels/859134561018839060/1417164013397217421/1417168189007331430) `page.js` (dev0) uses `header` (dev1) and `footer` (dev3). `header` uses `menubutton` (dev2), `footer` uses `statusbar` (dev4). Each one is by a different developer:
+- dev2 and dev4 don't know who will use their component.
+- dev0 wants to know as little as possible about the insides of `header` and `footer`.
+- `menubutton` has `drive: { 'state/': { raw: { 'name.json': 'clickme' } } }`, `statusbar` has `'counter.json': 0`. Every file has an empty `net: { }`.
+
+[**The goal:**](https://discord.com/channels/859134561018839060/1417164013397217421/1417168189007331430) a click on `menubutton` raises the number in `statusbar`, **without bubbling** the click up through `header` to `page` and back down through `footer`.
+- **The method:** define upfront that a message type sent by `header` (or `menubutton`) is received by `statusbar` as a message type `statusbar` supports.
+- Like **`mapping` for datasets**: components built separately don't have matching message types, so somebody has to map them.
+- Serapath grows the snippets into **the** io / net example. Ali can make proposals too, then they refine it together and update the docs.
+
+**Status today (checked in datashell):**
+- ⏳ **`net` in STATE.js:** STATE only gives each `net` entry an id and passes `net` through ([STATE.js:217-224](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L217-L224)). Validation just checks it's an object ([STATE.js:1362](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/STATE.js#L1362)). No wiring of connections, no message type mapping.
+- ⏳ **Docs:** [`doc/state/io.md`](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/doc/state/io.md) (107 lines) and [`doc/state/net.md`](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/doc/state/net.md) (17 lines) are the same files as Ali's. `net.md` is the one serapath called "plain wrong" (see 282).
+- ⏳ **Example:** none of the 5-file example in `web/`. Example 1's `btn.js` still has the old `net.event.click` code, commented out ([btn.js:57-61](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/web/example1/node_modules/btn.js#L57-L61)).
+- ❓ **A separate `net` module (3/2026):** Ahmad added [`lib/node_modules/net.js`](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/lib/node_modules/net.js) + [`doc/net.md`](https://github.com/playproject-io/datashell/blob/7976541ff36f2b7b1c237873aae4104d8f079d1e/doc/net.md) (184 lines): a parent `io.invite`s a child, the child `io.accept`s, then messages go by channel name. That's still parent ↔ child, so it doesn't reach the "no bubbling" goal by itself. Not checked if it's meant to be the answer to this thread.
+
+**Questions for serapath:**
+- **Ahmad's `net.js`:** is it the new `net`, or is the `net` fallback property (with message type mapping) still planned?
+- **The 5-file example:** is there a finished version of it, or is it still open?
+
+**Affects my work:**
+- **Docs (#39 4️⃣):** `io` / `net` first in the docs migration (with 282), and replace the wrong `doc/state/net.md`.
+- **Tests (#39):** the 5-file example as a test: a click in `menubutton` updates `statusbar` with no bubbling, and the connection comes back after a reload.
+- **My net.js message shape (see 273):** keep it close to whatever message type mapping is decided here.
